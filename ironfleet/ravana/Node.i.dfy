@@ -167,7 +167,22 @@ module Protocol_Node_i {
       )
     ) || (
       l.LMProc? &&
-      s' == s.(idx := s.idx + 1)
+      (
+        (
+          s.leader &&
+          s'.NodeController? &&
+          var old_map := s.buffered_commands;
+          var new_map := s'.buffered_commands;
+          var xid := l.comp_id;
+          !(xid in new_map) &&
+          (xid in old_map) &&
+          old_map == new_map[xid := old_map[xid]] &&
+          s' == s.(buffered_commands := new_map)
+        ) || (
+          !s.leader &&
+          s' == s.(idx := s.idx + 1)
+        )
+      )
     )
   }
 
@@ -221,5 +236,59 @@ module Protocol_Node_i {
                .(switchState := switchTransition(s.switchState, command))
       ))
     )
+  }
+
+  predicate Node_ControllerRecvAck(
+      s: Node, s': Node, ios: seq<RavanaIo>) {
+    s.NodeController? &&
+    s'.NodeController? &&
+    s.leader &&
+    |ios| == 1 &&
+    ios[0].LIoOpReceive? &&
+    var recv_packet := ios[0].r;
+    recv_packet.msg.CommandAck? &&
+    var command_id := recv_packet.msg.command_ack_id;
+    (
+      (
+        !s.leader && |ios| == 1 && s' == s
+      ) || (
+        s.leader &&
+        (
+          (
+            exists xid : int ::
+                xid in s.buffered_commands &&
+                command_id in s.buffered_commands[xid] &&
+                xid in s'.buffered_commands &&
+                var old_map := s.buffered_commands[xid];
+                var new_map := s'.buffered_commands[xid];
+                s' == s.(buffered_commands := s.buffered_commands[xid := new_map]) &&
+                !(command_id in new_map) &&
+                var command := old_map[command_id];
+                old_map == new_map[command_id := command]
+          ) || (
+            !(exists xid : int ::
+                xid in s.buffered_commands &&
+                command_id in s.buffered_commands[xid]) &&
+            s' == s
+          )
+        )
+      )
+    )
+  }
+
+  predicate Node_ControllerMarkEventComplete(
+      s: Node, s': Node, xid: int, ios: seq<RavanaIo>) {
+    s.NodeController? &&
+    s.leader &&
+    xid in s.buffered_commands &&
+    s.buffered_commands[xid] == map[] &&
+
+    |ios| == 1 &&
+    ios[0].LIoOpSend? &&
+    var send_packet := ios[0].s;
+    send_packet.dst == s.config.node_logger &&
+    send_packet.msg == LogMessage(LMProc(xid)) &&
+
+    s == s'
   }
 }
