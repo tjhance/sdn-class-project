@@ -21,6 +21,7 @@ module Types_i {
     | CommandAck(command_ack_id: int)
     | NewMaster
     | LogMessage(log_entry: LogEntry)
+    | LogBroadcastMessage(full_log: seq<LogEntry>)
 
   datatype LogEntry =
       LMRecv(switch: EndPoint, event: Event, event_id: int)
@@ -31,4 +32,15 @@ module Types_i {
   type RavanaEnvironment = LEnvironment<EndPoint, RavanaMessage>
   type RavanaPacket = LPacket<EndPoint, RavanaMessage>
   type RavanaIo = LIoOp<EndPoint, RavanaMessage>
+
+  datatype SingleCommand = SingleCommand(switch: EndPoint, command: Command)
+
+  function controllerTransition(
+      cs: ControllerState,
+      switch: EndPoint,
+      event: Event) : (ControllerState, seq<SingleCommand>)
+
+  function switchTransition(
+      ss: SwitchState,
+      command: Command) : SwitchState
 }
