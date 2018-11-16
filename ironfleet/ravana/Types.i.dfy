@@ -20,6 +20,7 @@ module Types_i {
     | CommandMessage(command: Command, command_id: int)
     | CommandAck(command_ack_id: int)
     | NewMaster
+    | NewMasterAck
     | LogMessage(log_entry: LogEntry)
     | LogBroadcastMessage(full_log: seq<LogEntry>)
 
@@ -43,4 +44,14 @@ module Types_i {
   function switchTransition(
       ss: SwitchState,
       command: Command) : SwitchState
+
+  datatype SwitchEvent = SwitchEvent(switch: EndPoint, event: Event)
+
+  datatype ServiceState = ServiceState(
+      switchStates: map<EndPoint, SwitchState>,
+      controllerState: ControllerState,
+
+      outstandingCommands: multiset<SingleCommand>,
+      outstandingEvents: multiset<SwitchEvent>
+    )
 }

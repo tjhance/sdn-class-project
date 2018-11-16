@@ -6,7 +6,7 @@ module Protocol_Node_i {
   datatype Config = Config(
       node_logger: EndPoint,
       node_controllers: seq<EndPoint>,
-      node_switches: seq<EndPoint>
+      node_switches: set<EndPoint>
     )
 
   datatype Node =
@@ -25,7 +25,10 @@ module Protocol_Node_i {
           idx: int,
 
           buffered_commands: map<int /* xid */, map<int /* command id */, SingleCommand>>,
-          current_command_id: int
+          current_command_id: int,
+
+          is_next_leader: bool,
+          switches_acked_master: set<EndPoint>
       )
     | NodeSwitch(
           bufferedEvents: seq<Event>,
@@ -43,6 +46,7 @@ module Protocol_Node_i {
     ) || (
       node.NodeController? &&
         node.leader == (my_index == 0) &&
+        node.is_next_leader == (my_index == 0) &&
         controllerStateInit(node.controllerState) &&
         node.config == config &&
         node.recved_events == map[] &&
@@ -290,5 +294,62 @@ module Protocol_Node_i {
     send_packet.msg == LogMessage(LMProc(xid)) &&
 
     s == s'
+  }
+
+  predicate Node_ControllerNewMaster(
+    s: Node, s': Node, ios: seq<RavanaIo>) {
+    |ios| == 0 &&
+    s.NodeController? &&
+    !s.is_next_leader &&
+    s' == s.(is_next_leader := true).(switches_acked_master := {})
+  }
+
+  predicate Node_ControllerSendNewMaster(s: Node, s': Node, ios: seq<RavanaIo>) {
+    s.NodeController? &&
+    s.is_next_leader &&
+
+    |ios| == 1 &&
+    ios[0].LIoOpSend? &&
+    var send_packet := ios[0].s;
+    send_packet.dst in s.config.node_switches &&
+    send_packet.msg == NewMaster &&
+
+    s == s'
+  }
+
+  predicate Node_SwitchNewMaster(s: Node, s': Node, ios: seq<RavanaIo>) {
+    s.NodeSwitch? &&
+
+    |ios| == 2 &&
+    ios[0].LIoOpReceive? &&
+    var recv_packet := ios[0].r;
+    recv_packet.msg.NewMaster? &&
+
+    s' == s.(master := recv_packet.src) &&
+
+    ios[1].LIoOpSend? &&
+    var send_packet := ios[1].s;
+    send_packet.dst == recv_packet.src &&
+    send_packet.msg == NewMasterAck
+  }
+
+  predicate Node_ControllerRecvNewMasterAck(s: Node, s': Node, ios: seq<RavanaIo>) {
+    s.NodeController? &&
+    s.is_next_leader &&
+
+    |ios| == 1 &&
+    ios[0].LIoOpReceive? &&
+    var recv_packet := ios[0].r;
+    recv_packet.msg.NewMasterAck? &&
+
+    s' == s.(switches_acked_master := s.switches_acked_master + { recv_packet.src })
+  }
+
+  predicate Node_ControllerNewMasterFinish(s: Node, s': Node, ios: seq<RavanaIo>) {
+    |ios| == 0 &&
+    s.NodeController? &&
+    s.is_next_leader &&
+    s.switches_acked_master == s.config.node_switches &&
+    s' == s.(leader := true)
   }
 }
