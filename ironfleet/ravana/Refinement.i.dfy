@@ -4,7 +4,7 @@ module Refinement_i {
   import opened Types_i
 
   predicate rstate_valid(rs: RState) {
-    true /* TODO */
+    exists ep :: ep in rs.servers && rs.servers[ep].NodeLogger?
   }
 
   predicate service_state_valid(ss: ServiceState) {
@@ -22,13 +22,15 @@ module Refinement_i {
     var (fwdControllerState, fwdOutstandingCommands) :=
           controller_state_looking_forward(log, rs.initControllerState);
 
-    var curOutstandingCommands := map_to_multiset(map
+    var curOutstandingCommands := set_to_multiset(set
           command_id : int | (
             0 <= command_id < |fwdOutstandingCommands| &&
-            var command := master_node.buffered_commands[xid][command_id];
+            var command := fwdOutstandingCommands[command_id];
+            command.switch in rs.servers &&
+            rs.servers[command.switch].NodeSwitch? &&
             !(command_id in rs.servers[command.switch].received_command_ids)
           ) ::
-            master_node.buffered_commands[xid][command_id]
+            (command_id, fwdOutstandingCommands[command_id])
         );
 
 
@@ -46,12 +48,12 @@ module Refinement_i {
 
     ss.switchStates == (
       map switch : EndPoint
-      | switch in rs_switches(rs)
+      | switch in rs.servers && rs.servers[switch].NodeSwitch?
       :: rs.servers[switch].switchState
     ) &&
 
     ss.controllerState == fwdControllerState &&
-    ss.outstandingCommands == fwdOutstandingCommands &&
+    ss.outstandingCommands == curOutstandingCommands &&
 
     var outstandingEvents := set_to_multiset(set
           switch : EndPoint, eid : int | (
@@ -59,7 +61,7 @@ module Refinement_i {
             rs.servers[switch].NodeSwitch? &&
             eid in rs.servers[switch].bufferedEvents
           ) ::
-            ((switch, eid), rs.servers[switch].bufferedEvents[eid])
+            ((switch, eid), SwitchEvent(switch, rs.servers[switch].bufferedEvents[eid]))
         );
 
     ss.outstandingEvents == outstandingEvents
@@ -67,10 +69,10 @@ module Refinement_i {
 
   function rs_logger_controller(rs: RState) : Node
   requires rstate_valid(rs)
-  ensures Node.NodeLogger?
+  ensures rs_logger_controller(rs).NodeLogger?
   {
     var ep :| ep in rs.servers && rs.servers[ep].NodeLogger?;
-    ep
+    rs.servers[ep]
   }
 
   function rs_log(rs: RState) : seq<LogEntry>
@@ -87,13 +89,46 @@ module Refinement_i {
       (controllerState, [])
     else (
       var elem := log[0];
-      if elem.LMProc then (
+      if elem.LMProc? then (
         controller_state_looking_forward(log[1 .. ], controllerState)
       ) else (
-        var cs', comms1 := controllerTransition(controllerState, elem.switch, elem.event);
-        var cs'', comms2 := controller_state_looking_forward(log[1 .. ], cs');
+        var (cs', comms1) := controllerTransition(controllerState, elem.switch, elem.event);
+        var (cs'', comms2) := controller_state_looking_forward(log[1 .. ], cs');
         (cs'', comms1 + comms2)
       )
     )
   }
+
+  function set_to_multiset<A, B>(m: set<(A, B)>) : multiset<B>
+  {
+    if |m| == 0 then
+      multiset{}
+    else (
+      var y :| y in m;
+      var (a, b) := y;
+      var m' := m - {y};
+      set_to_multiset(m') + multiset{b}
+    )
+  }
+
+  /*
+  function rs_switches(rs: RState) : seq<EndPoint>
+  //ensures forall node : Node :: (node in rs_switches(rs) ==> node in rs.servers && rs.servers[node].
+  {
+    filter_switches(rs.servers)
+  }
+
+  function filter_switches(m: map<EndPoint, Node>) : seq<EndPoint>
+  //ensures forall node : Node :: (node in rs_switches(rs) ==> node.NodeSwitch?)
+  {
+    if |m| == 0 then
+      []
+    else (
+      var y :| y in m;
+      var sw := m[y];
+      var m' := map i | i in m && i != y :: m[i];
+      filter_switches(m') + (if sw.NodeSwitch? then [y] else [])
+    )
+  }
+  */
 }
