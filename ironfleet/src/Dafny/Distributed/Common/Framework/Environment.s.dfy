@@ -19,10 +19,12 @@ datatype LEnvStep<IdType, MessageType(==)> = LEnvStepHostIos(actor:IdType, ios:s
 
 datatype LHostInfo<IdType, MessageType(==)> = LHostInfo(queue:seq<LPacket<IdType, MessageType>>)
 
-datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(time:int,
-                                                              sentPackets:set<LPacket<IdType, MessageType>>,
-                                                              hostInfo:map<IdType, LHostInfo<IdType, MessageType>>,
-                                                              nextStep:LEnvStep<IdType, MessageType>)
+datatype LEnvironment<IdType, MessageType(==)> = LEnvironment(
+    time:int,
+    sentPackets:set<LPacket<IdType, MessageType>>,
+    hostInfo:map<IdType, LHostInfo<IdType, MessageType>>,
+    nextStep:LEnvStep<IdType, MessageType>
+  )
                                         
 predicate IsValidLIoOp<IdType, MessageType>(io:LIoOp, actor:IdType, e:LEnvironment<IdType, MessageType>)
 {

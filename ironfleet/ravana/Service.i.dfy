@@ -24,14 +24,13 @@ module Service_i {
 
   predicate Service_NextApplyEvent(s: ServiceState, s': ServiceState) {
     s.switchStates == s'.switchStates &&
-    s.outstandingCommands == multiset{} &&
 
     multiset_adds_one(s'.outstandingEvents, s.outstandingEvents) &&
     var event := added_obj(s'.outstandingEvents, s.outstandingEvents);
     var (cs', singleCommands) :=
         controllerTransition(s.controllerState, event.switch, event.event);
     s'.controllerState == cs' &&
-    s'.outstandingCommands == seq_to_multiset(singleCommands)
+    s'.outstandingCommands == s.outstandingCommands + seq_to_multiset(singleCommands)
   }
 
   predicate Service_NextApplyCommand(s: ServiceState, s': ServiceState) {

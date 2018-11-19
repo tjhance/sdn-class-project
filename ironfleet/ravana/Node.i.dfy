@@ -3,41 +3,6 @@ include "Types.i.dfy"
 module Protocol_Node_i {
   import opened Types_i
 
-  datatype Config = Config(
-      node_logger: EndPoint,
-      node_controllers: seq<EndPoint>,
-      node_switches: set<EndPoint>
-    )
-
-  datatype Node =
-      NodeLogger(
-          log: seq<LogEntry>,
-          clients: seq<EndPoint>
-      )
-    | NodeController(
-          leader: bool,
-          controllerState: ControllerState,
-          config: Config,
-
-          recved_events: map<SwitchIdPair, Event>,
-
-          log_copy: seq<LogEntry>,
-          idx: int,
-
-          buffered_commands: map<int /* xid */, map<int /* command id */, SingleCommand>>,
-          current_command_id: int,
-
-          is_next_leader: bool,
-          switches_acked_master: set<EndPoint>
-      )
-    | NodeSwitch(
-          bufferedEvents: seq<Event>,
-          switchState: SwitchState,
-          event_id: int,
-          master: EndPoint,
-          received_command_ids: seq<int>
-      )
-
   predicate NodeInit(node: Node, my_index: int, config: Config) {
     (
       node.NodeLogger? &&
@@ -55,7 +20,7 @@ module Protocol_Node_i {
         node.idx == 0
     ) || (
       node.NodeSwitch? &&
-        node.bufferedEvents == [] &&
+        node.bufferedEvents == map[] &&
         switchStateInit(node.switchState) &&
         node.event_id == 0 &&
         |config.node_controllers| >= 1 &&
@@ -66,7 +31,7 @@ module Protocol_Node_i {
   predicate Node_SwitchEvent(s: Node, s': Node, event: Event, ios: seq<RavanaIo>) {
     s.NodeSwitch? &&
       s' == s.
-          (bufferedEvents := s.bufferedEvents + [event]).
+          (bufferedEvents := s.bufferedEvents[s.event_id := event]).
           (event_id := s.event_id + 1) &&
       |ios| == 1 && ios[0].LIoOpSend? &&
 
@@ -139,7 +104,6 @@ module Protocol_Node_i {
   }
 
   predicate Node_ControllerProcessEntry(s: Node, s': Node, ios: seq<RavanaIo>) {
-    // TODO there should be something that checks if it's the leader, here
     // TODO should send EventAck to the client
     s.NodeController? &&
     0 <= s.idx < |s.log_copy| &&

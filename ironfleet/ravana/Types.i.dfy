@@ -54,4 +54,45 @@ module Types_i {
       outstandingCommands: multiset<SingleCommand>,
       outstandingEvents: multiset<SwitchEvent>
     )
+
+  datatype Config = Config(
+      node_logger: EndPoint,
+      node_controllers: seq<EndPoint>,
+      node_switches: set<EndPoint>
+    )
+
+  datatype Node =
+      NodeLogger(
+          log: seq<LogEntry>,
+          clients: seq<EndPoint>
+      )
+    | NodeController(
+          leader: bool,
+          controllerState: ControllerState,
+          config: Config,
+
+          recved_events: map<SwitchIdPair, Event>,
+
+          log_copy: seq<LogEntry>,
+          idx: int,
+
+          buffered_commands: map<int /* xid */, map<int /* command id */, SingleCommand>>,
+          current_command_id: int,
+
+          is_next_leader: bool,
+          switches_acked_master: set<EndPoint>
+      )
+    | NodeSwitch(
+          bufferedEvents: map<int, Event>,
+          switchState: SwitchState,
+          event_id: int,
+          master: EndPoint,
+          received_command_ids: seq<int>
+      )
+
+  datatype RState = RState(
+      env: RavanaEnvironment,
+      servers: map<EndPoint, Node>
+    )
+
 }
