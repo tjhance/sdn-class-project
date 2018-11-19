@@ -19,7 +19,8 @@ module Types_i {
     | EventAck(event_ack_id: int)
     | CommandMessage(command: Command, command_id: int)
     | CommandAck(command_ack_id: int)
-    | NewMaster
+    | InitNewMaster(leader_id: int)
+    | NewMaster(master_id: int)
     | NewMasterAck
     | LogMessage(log_entry: LogEntry)
     | LogBroadcastMessage(full_log: seq<LogEntry>)
@@ -63,8 +64,11 @@ module Types_i {
 
   datatype Node =
       NodeLogger(
+          clients: seq<EndPoint>,
+
           log: seq<LogEntry>,
-          clients: seq<EndPoint>
+
+          master_log: seq<EndPoint>
       )
     | NodeController(
           leader: bool,
@@ -80,13 +84,15 @@ module Types_i {
           current_command_id: int,
 
           is_next_leader: bool,
-          switches_acked_master: set<EndPoint>
+          switches_acked_master: set<EndPoint>,
+          my_leader_id: int
       )
     | NodeSwitch(
           bufferedEvents: map<int, Event>,
           switchState: SwitchState,
           event_id: int,
           master: EndPoint,
+          master_id: int,
           received_command_ids: seq<int>
       )
 

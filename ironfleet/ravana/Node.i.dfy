@@ -7,7 +7,9 @@ module Protocol_Node_i {
     (
       node.NodeLogger? &&
         node.log == [] &&
-        node.clients == config.node_controllers
+        node.clients == config.node_controllers &&
+        |config.node_controllers| >= 1 &&
+        node.master_log == [config.node_controllers[0]]
     ) || (
       node.NodeController? &&
         node.leader == (my_index == 0) &&
@@ -17,14 +19,16 @@ module Protocol_Node_i {
         node.recved_events == map[] &&
         node.log_copy == [] &&
         node.current_command_id == 0 &&
-        node.idx == 0
+        node.idx == 0 &&
+        node.my_leader_id == (if my_index == 0 then 0 else -1)
     ) || (
       node.NodeSwitch? &&
         node.bufferedEvents == map[] &&
         switchStateInit(node.switchState) &&
         node.event_id == 0 &&
         |config.node_controllers| >= 1 &&
-        node.master == config.node_controllers[0]
+        node.master == config.node_controllers[0] &&
+        node.master_id == 0
     )
   }
 
@@ -260,12 +264,43 @@ module Protocol_Node_i {
     s == s'
   }
 
+  predicate Node_LoggerInitNewMaster(
+      s: Node, s': Node, ios: seq<RavanaIo>) {
+    s.NodeLogger? &&
+    s'.NodeLogger? &&
+    s'.clients == s.clients &&
+    s'.log == s.log &&
+    |s'.master_log| >= 1 &&
+    s.master_log == s'.master_log[0 .. |s'.master_log| - 1]
+  }
+
+  predicate Node_LoggerInitNewMasterMsg(
+      s: Node, s': Node, ios: seq<RavanaIo>) {
+    s.NodeLogger? &&
+    s == s' &&
+    |s.master_log| >= 1 &&
+
+    |ios| == 1 &&
+    ios[0].LIoOpSend? &&
+    var send_packet := ios[0].s;
+    send_packet.dst == s.master_log[|s.master_log| - 1] &&
+    send_packet.msg == InitNewMaster(|s.master_log| - 1)
+  }
+
   predicate Node_ControllerNewMaster(
-    s: Node, s': Node, ios: seq<RavanaIo>) {
-    |ios| == 0 &&
+      s: Node, s': Node, ios: seq<RavanaIo>) {
     s.NodeController? &&
+
+    |ios| == 1 &&
+    ios[0].LIoOpReceive? &&
+    var recv_packet := ios[0].r;
+    recv_packet.msg.InitNewMaster? &&
+
     !s.is_next_leader &&
-    s' == s.(is_next_leader := true).(switches_acked_master := {})
+
+    s' == s.(is_next_leader := true)
+           .(switches_acked_master := {})
+           .(my_leader_id := recv_packet.msg.leader_id)
   }
 
   predicate Node_ControllerSendNewMaster(s: Node, s': Node, ios: seq<RavanaIo>) {
@@ -276,7 +311,7 @@ module Protocol_Node_i {
     ios[0].LIoOpSend? &&
     var send_packet := ios[0].s;
     send_packet.dst in s.config.node_switches &&
-    send_packet.msg == NewMaster &&
+    send_packet.msg == NewMaster(s.my_leader_id) &&
 
     s == s'
   }
@@ -288,8 +323,9 @@ module Protocol_Node_i {
     ios[0].LIoOpReceive? &&
     var recv_packet := ios[0].r;
     recv_packet.msg.NewMaster? &&
+    recv_packet.msg.master_id >= s.master_id &&
 
-    s' == s.(master := recv_packet.src) &&
+    s' == s.(master := recv_packet.src).(master_id := recv_packet.msg.master_id) &&
 
     ios[1].LIoOpSend? &&
     var send_packet := ios[1].s;
