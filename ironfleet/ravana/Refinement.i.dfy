@@ -16,7 +16,6 @@ module Refinement_i {
     rstate_valid(rs) &&
     service_state_valid(ss) &&
 
-    //var master_node := rs_master_controller(rs);
     var log := rs_log(rs);
 
     var (fwdControllerState, fwdOutstandingCommands) :=
@@ -32,19 +31,6 @@ module Refinement_i {
           ) ::
             (command_id, fwdOutstandingCommands[command_id])
         );
-
-
-    /*
-    var curOutstandingCommands := set_to_multiset(set
-          xid : int , command_id : int | (
-            xid in master_node.buffered_commands &&
-            command_id in master_node.buffered_commands[xid] &&
-            var command := master_node.buffered_commands[xid][command_id];
-            !(command_id in rs.servers[command.switch].received_command_ids)
-          ) ::
-            ((xid, command_id), master_node.buffered_commands[xid][command_id])
-        );
-    */
 
     ss.switchStates == (
       map switch : EndPoint
@@ -110,25 +96,4 @@ module Refinement_i {
       set_to_multiset(m') + multiset{b}
     )
   }
-
-  /*
-  function rs_switches(rs: RState) : seq<EndPoint>
-  //ensures forall node : Node :: (node in rs_switches(rs) ==> node in rs.servers && rs.servers[node].
-  {
-    filter_switches(rs.servers)
-  }
-
-  function filter_switches(m: map<EndPoint, Node>) : seq<EndPoint>
-  //ensures forall node : Node :: (node in rs_switches(rs) ==> node.NodeSwitch?)
-  {
-    if |m| == 0 then
-      []
-    else (
-      var y :| y in m;
-      var sw := m[y];
-      var m' := map i | i in m && i != y :: m[i];
-      filter_switches(m') + (if sw.NodeSwitch? then [y] else [])
-    )
-  }
-  */
 }
