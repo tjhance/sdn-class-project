@@ -4,18 +4,12 @@ module Refinement_i {
   import opened Types_i
 
   predicate rstate_valid(rs: RState) {
-    true
+    true // TODO
   }
 
-  predicate service_state_valid(ss: ServiceState) {
-    true /* TODO */
-  }
-
-  predicate refinement(rs: RState, ss: ServiceState)
+  function refinement(rs: RState) : ServiceState
+  requires rstate_valid(rs)
   {
-    rstate_valid(rs) &&
-    service_state_valid(ss) &&
-
     var log := rs.server_logger.log;
 
     var (fwdControllerState, fwdOutstandingCommands) :=
@@ -31,14 +25,14 @@ module Refinement_i {
             (command_id, fwdOutstandingCommands[command_id])
         );
 
-    ss.switchStates == (
+    var switchStates := (
       map switch : EndPoint
       | switch in rs.server_switches
       :: rs.server_switches[switch].switchState
-    ) &&
+    );
 
-    ss.controllerState == fwdControllerState &&
-    ss.outstandingCommands == curOutstandingCommands &&
+    var controllerState := fwdControllerState;
+    var outstandingCommands := curOutstandingCommands;
 
     var outstandingEvents := set_to_multiset(set
           switch : EndPoint, eid : int | (
@@ -48,7 +42,7 @@ module Refinement_i {
             ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
         );
 
-    ss.outstandingEvents == outstandingEvents
+    ServiceState(switchStates, controllerState, outstandingCommands, outstandingEvents)
   }
 
   function controller_state_looking_forward(

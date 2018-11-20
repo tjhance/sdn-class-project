@@ -12,7 +12,8 @@ module Service_i {
   predicate Service_Next(s: ServiceState, s': ServiceState) {
     Service_NextNewEvent(s, s') ||
     Service_NextApplyEvent(s, s') ||
-    Service_NextApplyCommand(s, s')
+    Service_NextApplyCommand(s, s') ||
+    s == s'
   }
 
   predicate Service_NextNewEvent(s: ServiceState, s': ServiceState) {
