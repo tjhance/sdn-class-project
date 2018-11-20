@@ -110,17 +110,19 @@ module Protocol_Node_i {
     var recv_packet := ios[0].r;
     recv_packet.msg.LogMessage? &&
 
+    !(recv_packet.msg.log_entry in s.log) &&
+
     s' == s.(log := s.log + [recv_packet.msg.log_entry])
   }
 
   predicate Node_LoggerBroadcast(s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {
     s' == s &&
 
-    |ios| == |s.clients| &&
-    forall i :: 0 <= i < |s.clients| ==>
-        ios[i].LIoOpSend? &&
-        ios[i].s.dst == s.clients[i] &&
-        ios[i].s.msg == LogBroadcastMessage(s.log)
+    |ios| == 1 &&
+
+    ios[0].LIoOpSend? &&
+    ios[0].s.dst in s.clients &&
+    ios[0].s.msg == LogBroadcastMessage(s.log)
   }
 
   predicate Node_ControllerReadLog(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {

@@ -38,6 +38,7 @@ module DistributedSystem_i {
   {
     LEnvironment_Next(rs.environment, rs'.environment) &&
     rs.endpoint_logger == rs'.endpoint_logger &&
+    rs.initControllerState == rs'.initControllerState &&
     (if rs.environment.nextStep.LEnvStepHostIos? then
         (if rs.environment.nextStep.actor == rs.endpoint_logger then
             RS_NextOneServer_Logger(rs, rs',
