@@ -96,8 +96,9 @@ module Types_i {
       )
 
   datatype RState = RState(
-      env: RavanaEnvironment,
+      environment: RavanaEnvironment,
 
+      endpoint_logger: EndPoint,
       server_logger: NodeLogger,
       server_controllers: map<EndPoint, NodeController>,
       server_switches: map<EndPoint, NodeSwitch>,
