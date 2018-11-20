@@ -62,15 +62,14 @@ module Types_i {
       node_switches: set<EndPoint>
     )
 
-  datatype Node =
-      NodeLogger(
+  datatype NodeLogger = NodeLogger(
           clients: seq<EndPoint>,
 
           log: seq<LogEntry>,
 
           master_log: seq<EndPoint>
       )
-    | NodeController(
+  datatype NodeController = NodeController(
           leader: bool,
           controllerState: ControllerState,
           config: Config,
@@ -87,7 +86,7 @@ module Types_i {
           switches_acked_master: set<EndPoint>,
           my_leader_id: int
       )
-    | NodeSwitch(
+  datatype NodeSwitch = NodeSwitch(
           bufferedEvents: map<int, Event>,
           switchState: SwitchState,
           event_id: int,
@@ -98,7 +97,11 @@ module Types_i {
 
   datatype RState = RState(
       env: RavanaEnvironment,
-      servers: map<EndPoint, Node>,
+
+      server_logger: NodeLogger,
+      server_controllers: map<EndPoint, NodeController>,
+      server_switches: map<EndPoint, NodeSwitch>,
+
       initControllerState: ControllerState
     )
 }

@@ -4,7 +4,7 @@ module Refinement_i {
   import opened Types_i
 
   predicate rstate_valid(rs: RState) {
-    exists ep :: ep in rs.servers && rs.servers[ep].NodeLogger?
+    true
   }
 
   predicate service_state_valid(ss: ServiceState) {
@@ -16,7 +16,7 @@ module Refinement_i {
     rstate_valid(rs) &&
     service_state_valid(ss) &&
 
-    var log := rs_log(rs);
+    var log := rs.server_logger.log;
 
     var (fwdControllerState, fwdOutstandingCommands) :=
           controller_state_looking_forward(log, rs.initControllerState);
@@ -25,17 +25,16 @@ module Refinement_i {
           command_id : int | (
             0 <= command_id < |fwdOutstandingCommands| &&
             var command := fwdOutstandingCommands[command_id];
-            command.switch in rs.servers &&
-            rs.servers[command.switch].NodeSwitch? &&
-            !(command_id in rs.servers[command.switch].received_command_ids)
+            command.switch in rs.server_switches &&
+            !(command_id in rs.server_switches[command.switch].received_command_ids)
           ) ::
             (command_id, fwdOutstandingCommands[command_id])
         );
 
     ss.switchStates == (
       map switch : EndPoint
-      | switch in rs.servers && rs.servers[switch].NodeSwitch?
-      :: rs.servers[switch].switchState
+      | switch in rs.server_switches
+      :: rs.server_switches[switch].switchState
     ) &&
 
     ss.controllerState == fwdControllerState &&
@@ -43,28 +42,13 @@ module Refinement_i {
 
     var outstandingEvents := set_to_multiset(set
           switch : EndPoint, eid : int | (
-            switch in rs.servers &&
-            rs.servers[switch].NodeSwitch? &&
-            eid in rs.servers[switch].bufferedEvents
+            switch in rs.server_switches &&
+            eid in rs.server_switches[switch].bufferedEvents
           ) ::
-            ((switch, eid), SwitchEvent(switch, rs.servers[switch].bufferedEvents[eid]))
+            ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
         );
 
     ss.outstandingEvents == outstandingEvents
-  }
-
-  function rs_logger_controller(rs: RState) : Node
-  requires rstate_valid(rs)
-  ensures rs_logger_controller(rs).NodeLogger?
-  {
-    var ep :| ep in rs.servers && rs.servers[ep].NodeLogger?;
-    rs.servers[ep]
-  }
-
-  function rs_log(rs: RState) : seq<LogEntry>
-  requires rstate_valid(rs)
-  {
-    rs_logger_controller(rs).log
   }
 
   function controller_state_looking_forward(

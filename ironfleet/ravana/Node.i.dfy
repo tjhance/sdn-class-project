@@ -3,63 +3,70 @@ include "Types.i.dfy"
 module Protocol_Node_i {
   import opened Types_i
 
-  predicate NodeInit_Logger(node: Node, config: Config)
+  predicate NodeInit_Logger(node: NodeLogger, config: Config)
   {
-      node.NodeLogger? &&
-        node.log == [] &&
-        node.clients == config.node_controllers &&
-        |config.node_controllers| >= 1 &&
-        node.master_log == [config.node_controllers[0]]
+      node.log == [] &&
+      node.clients == config.node_controllers &&
+      |config.node_controllers| >= 1 &&
+      node.master_log == [config.node_controllers[0]]
   }
 
-  predicate NodeInit_Controller(node: Node, my_index: int, config: Config)
+  predicate NodeInit_Controller(node: NodeController, my_index: int, config: Config)
   {
-      node.NodeController? &&
-        node.leader == (my_index == 0) &&
-        node.is_next_leader == (my_index == 0) &&
-        controllerStateInit(node.controllerState) &&
-        node.config == config &&
-        node.recved_events == map[] &&
-        node.log_copy == [] &&
-        node.current_command_id == 0 &&
-        node.idx == 0 &&
-        node.my_leader_id == (if my_index == 0 then 0 else -1)
+      node.leader == (my_index == 0) &&
+      node.is_next_leader == (my_index == 0) &&
+      controllerStateInit(node.controllerState) &&
+      node.config == config &&
+      node.recved_events == map[] &&
+      node.log_copy == [] &&
+      node.current_command_id == 0 &&
+      node.idx == 0 &&
+      node.my_leader_id == (if my_index == 0 then 0 else -1)
   }
 
-  predicate NodeInit_Switch(node: Node, my_index: int, config: Config)
-      node.NodeSwitch? &&
-        node.bufferedEvents == map[] &&
-        switchStateInit(node.switchState) &&
-        node.event_id == 0 &&
-        |config.node_controllers| >= 1 &&
-        node.master == config.node_controllers[0] &&
-        node.master_id == 0
+  predicate NodeInit_Switch(node: NodeSwitch, my_index: int, config: Config)
+  {
+      node.bufferedEvents == map[] &&
+      switchStateInit(node.switchState) &&
+      node.event_id == 0 &&
+      |config.node_controllers| >= 1 &&
+      node.master == config.node_controllers[0] &&
+      node.master_id == 0
   }
 
-  predicate NodeNext(s: Node, s': Node, ios: seq<RavanaIo>) {
-    (exists event :: Node_SwitchEvent(s, s', event, ios)) ||
-    Node_ControllerRecvEvent(s, s', ios) ||
-    (exists p :: Node_ControllerLogEvent(s, s', p, ios)) ||
+  predicate NodeNext_Logger(s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {
     Node_LoggerLogEvent(s, s', ios) ||
     Node_LoggerBroadcast(s, s', ios) ||
+    Node_LoggerInitNewMaster(s, s', ios) ||
+    Node_LoggerInitNewMasterMsg(s, s', ios)
+  }
+
+  predicate NodeNext_Controller(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
+    Node_ControllerRecvEvent(s, s', ios) ||
+    (exists p :: Node_ControllerLogEvent(s, s', p, ios)) ||
     Node_ControllerReadLog(s, s', ios) ||
     Node_ControllerProcessEntry(s, s', ios) ||
     (exists xid :: exists command_id ::
         Node_ControllerSendCommand(s, s', xid, command_id, ios)) ||
-    Node_SwitchRecvCommand(s, s', ios) ||
     Node_ControllerRecvAck(s, s', ios) ||
     (exists xid :: Node_ControllerMarkEventComplete(s, s',xid, ios)) ||
-    Node_LoggerInitNewMaster(s, s', ios) ||
-    Node_LoggerInitNewMasterMsg(s, s', ios) ||
     Node_ControllerNewMaster(s, s', ios) ||
     Node_ControllerSendNewMaster(s, s', ios) ||
-    Node_SwitchNewMaster(s, s', ios) ||
     Node_ControllerRecvNewMasterAck(s, s', ios) ||
     Node_ControllerNewMasterFinish(s, s', ios)
   }
 
-  predicate Node_SwitchEvent(s: Node, s': Node, event: Event, ios: seq<RavanaIo>) {
-    s.NodeSwitch? &&
+  predicate NodeNext_Switch(s: NodeSwitch, s': NodeSwitch, ios: seq<RavanaIo>) {
+    (exists event :: Node_SwitchEvent(s, s', event, ios)) ||
+    Node_SwitchRecvCommand(s, s', ios) ||
+    Node_SwitchNewMaster(s, s', ios)
+  }
+
+  /*
+   * Events
+   */
+
+  predicate Node_SwitchEvent(s: NodeSwitch, s': NodeSwitch, event: Event, ios: seq<RavanaIo>) {
       s' == s.
           (bufferedEvents := s.bufferedEvents[s.event_id := event]).
           (event_id := s.event_id + 1) &&
@@ -72,8 +79,7 @@ module Protocol_Node_i {
 
   // TODO I think we want to combine these two:
 
-  predicate Node_ControllerRecvEvent(s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeController? &&
+  predicate Node_ControllerRecvEvent(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     s.leader &&
 
     |ios| == 1 &&
@@ -86,8 +92,7 @@ module Protocol_Node_i {
         SwitchIdPair(recv_packet.src, recv_packet.msg.event_id) := recv_packet.msg.event])
   }
 
-  predicate Node_ControllerLogEvent(s: Node, s': Node, p: SwitchIdPair, ios: seq<RavanaIo>) {
-    s.NodeController? &&
+  predicate Node_ControllerLogEvent(s: NodeController, s': NodeController, p: SwitchIdPair, ios: seq<RavanaIo>) {
     s.leader &&
 
     p in s.recved_events &&
@@ -99,9 +104,7 @@ module Protocol_Node_i {
     send_packet.msg == LogMessage(LMRecv(p.switch, s.recved_events[p], p.event_id))
   }
 
-  predicate Node_LoggerLogEvent(s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeLogger? &&
-
+  predicate Node_LoggerLogEvent(s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {
     |ios| == 1 &&
     ios[0].LIoOpReceive? &&
     var recv_packet := ios[0].r;
@@ -110,8 +113,7 @@ module Protocol_Node_i {
     s' == s.(log := s.log + [recv_packet.msg.log_entry])
   }
 
-  predicate Node_LoggerBroadcast(s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeLogger? &&
+  predicate Node_LoggerBroadcast(s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {
     s' == s &&
 
     |ios| == |s.clients| &&
@@ -121,7 +123,7 @@ module Protocol_Node_i {
         ios[i].s.msg == LogBroadcastMessage(s.log)
   }
 
-  predicate Node_ControllerReadLog(s: Node, s': Node, ios: seq<RavanaIo>) {
+  predicate Node_ControllerReadLog(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     s.NodeController? &&
     |ios| == 1 &&
     ios[0].LIoOpReceive? &&
@@ -133,9 +135,8 @@ module Protocol_Node_i {
         if |new_log_copy| > |s.log_copy| then new_log_copy else s.log_copy)
   }
 
-  predicate Node_ControllerProcessEntry(s: Node, s': Node, ios: seq<RavanaIo>) {
+  predicate Node_ControllerProcessEntry(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     // TODO should send EventAck to the client
-    s.NodeController? &&
     0 <= s.idx < |s.log_copy| &&
     ios == [] &&
     var l := s.log_copy[s.idx];
@@ -185,8 +186,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_ControllerSendCommand(
-      s: Node, s': Node, xid: int, command_id: int, ios: seq<RavanaIo>) {
-    s.NodeController? &&
+      s: NodeController, s': NodeController, xid: int, command_id: int, ios: seq<RavanaIo>) {
     s.leader &&
     xid in s.buffered_commands &&
     command_id in s.buffered_commands[xid] &&
@@ -199,8 +199,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_SwitchRecvCommand(
-      s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeSwitch? &&
+      s: NodeSwitch, s': NodeSwitch, ios: seq<RavanaIo>) {
     |ios| >= 1 &&
     ios[0].LIoOpReceive? &&
     var recv_packet := ios[0].r;
@@ -237,9 +236,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_ControllerRecvAck(
-      s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeController? &&
-    s'.NodeController? &&
+      s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     s.leader &&
     |ios| == 1 &&
     ios[0].LIoOpReceive? &&
@@ -275,8 +272,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_ControllerMarkEventComplete(
-      s: Node, s': Node, xid: int, ios: seq<RavanaIo>) {
-    s.NodeController? &&
+      s: NodeController, s': NodeController, xid: int, ios: seq<RavanaIo>) {
     s.leader &&
     xid in s.buffered_commands &&
     s.buffered_commands[xid] == map[] &&
@@ -291,9 +287,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_LoggerInitNewMaster(
-      s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeLogger? &&
-    s'.NodeLogger? &&
+      s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {
     s'.clients == s.clients &&
     s'.log == s.log &&
     |s'.master_log| >= 1 &&
@@ -301,8 +295,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_LoggerInitNewMasterMsg(
-      s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeLogger? &&
+      s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {
     s == s' &&
     |s.master_log| >= 1 &&
 
@@ -314,7 +307,7 @@ module Protocol_Node_i {
   }
 
   predicate Node_ControllerNewMaster(
-      s: Node, s': Node, ios: seq<RavanaIo>) {
+      s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     s.NodeController? &&
 
     |ios| == 1 &&
@@ -329,8 +322,7 @@ module Protocol_Node_i {
            .(my_leader_id := recv_packet.msg.leader_id)
   }
 
-  predicate Node_ControllerSendNewMaster(s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeController? &&
+  predicate Node_ControllerSendNewMaster(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     s.is_next_leader &&
 
     |ios| == 1 &&
@@ -342,9 +334,7 @@ module Protocol_Node_i {
     s == s'
   }
 
-  predicate Node_SwitchNewMaster(s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeSwitch? &&
-
+  predicate Node_SwitchNewMaster(s: NodeSwitch, s': NodeSwitch, ios: seq<RavanaIo>) {
     |ios| == 2 &&
     ios[0].LIoOpReceive? &&
     var recv_packet := ios[0].r;
@@ -359,8 +349,7 @@ module Protocol_Node_i {
     send_packet.msg == NewMasterAck
   }
 
-  predicate Node_ControllerRecvNewMasterAck(s: Node, s': Node, ios: seq<RavanaIo>) {
-    s.NodeController? &&
+  predicate Node_ControllerRecvNewMasterAck(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     s.is_next_leader &&
 
     |ios| == 1 &&
@@ -371,9 +360,8 @@ module Protocol_Node_i {
     s' == s.(switches_acked_master := s.switches_acked_master + { recv_packet.src })
   }
 
-  predicate Node_ControllerNewMasterFinish(s: Node, s': Node, ios: seq<RavanaIo>) {
+  predicate Node_ControllerNewMasterFinish(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     |ios| == 0 &&
-    s.NodeController? &&
     s.is_next_leader &&
     s.switches_acked_master == s.config.node_switches &&
     s' == s.(leader := true)
