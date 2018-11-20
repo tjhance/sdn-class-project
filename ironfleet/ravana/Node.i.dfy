@@ -363,7 +363,7 @@ module Protocol_Node_i {
   predicate Node_ControllerNewMasterFinish(s: NodeController, s': NodeController, ios: seq<RavanaIo>) {
     |ios| == 0 &&
     s.is_next_leader &&
-    s.switches_acked_master == s.config.node_switches &&
+    (forall sw :: sw in s.config.node_switches ==> sw in s.switches_acked_master) &&
     s' == s.(leader := true)
   }
 }

@@ -59,7 +59,7 @@ module Types_i {
   datatype Config = Config(
       node_logger: EndPoint,
       node_controllers: seq<EndPoint>,
-      node_switches: set<EndPoint>
+      node_switches: seq<EndPoint>
     )
 
   datatype NodeLogger = NodeLogger(
