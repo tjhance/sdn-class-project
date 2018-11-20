@@ -3,14 +3,17 @@ include "Types.i.dfy"
 module Protocol_Node_i {
   import opened Types_i
 
-  predicate NodeInit(node: Node, my_index: int, config: Config) {
-    (
+  predicate NodeInit_Logger(node: Node, config: Config)
+  {
       node.NodeLogger? &&
         node.log == [] &&
         node.clients == config.node_controllers &&
         |config.node_controllers| >= 1 &&
         node.master_log == [config.node_controllers[0]]
-    ) || (
+  }
+
+  predicate NodeInit_Controller(node: Node, my_index: int, config: Config)
+  {
       node.NodeController? &&
         node.leader == (my_index == 0) &&
         node.is_next_leader == (my_index == 0) &&
@@ -21,7 +24,9 @@ module Protocol_Node_i {
         node.current_command_id == 0 &&
         node.idx == 0 &&
         node.my_leader_id == (if my_index == 0 then 0 else -1)
-    ) || (
+  }
+
+  predicate NodeInit_Switch(node: Node, my_index: int, config: Config)
       node.NodeSwitch? &&
         node.bufferedEvents == map[] &&
         switchStateInit(node.switchState) &&
@@ -29,7 +34,28 @@ module Protocol_Node_i {
         |config.node_controllers| >= 1 &&
         node.master == config.node_controllers[0] &&
         node.master_id == 0
-    )
+  }
+
+  predicate NodeNext(s: Node, s': Node, ios: seq<RavanaIo>) {
+    (exists event :: Node_SwitchEvent(s, s', event, ios)) ||
+    Node_ControllerRecvEvent(s, s', ios) ||
+    (exists p :: Node_ControllerLogEvent(s, s', p, ios)) ||
+    Node_LoggerLogEvent(s, s', ios) ||
+    Node_LoggerBroadcast(s, s', ios) ||
+    Node_ControllerReadLog(s, s', ios) ||
+    Node_ControllerProcessEntry(s, s', ios) ||
+    (exists xid :: exists command_id ::
+        Node_ControllerSendCommand(s, s', xid, command_id, ios)) ||
+    Node_SwitchRecvCommand(s, s', ios) ||
+    Node_ControllerRecvAck(s, s', ios) ||
+    (exists xid :: Node_ControllerMarkEventComplete(s, s',xid, ios)) ||
+    Node_LoggerInitNewMaster(s, s', ios) ||
+    Node_LoggerInitNewMasterMsg(s, s', ios) ||
+    Node_ControllerNewMaster(s, s', ios) ||
+    Node_ControllerSendNewMaster(s, s', ios) ||
+    Node_SwitchNewMaster(s, s', ios) ||
+    Node_ControllerRecvNewMasterAck(s, s', ios) ||
+    Node_ControllerNewMasterFinish(s, s', ios)
   }
 
   predicate Node_SwitchEvent(s: Node, s': Node, event: Event, ios: seq<RavanaIo>) {
