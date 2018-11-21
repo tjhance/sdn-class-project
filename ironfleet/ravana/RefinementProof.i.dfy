@@ -122,8 +122,11 @@ module Refinement_Proof_i {
   }
   */
 
-  lemma lemma_refines_LoggerLogEvent_multiset(rs: RState, rs': RState, log_entry: LogEntry)
+  lemma
+  {:fuel log_is_valid,1,2}
+  lemma_refines_LoggerLogEvent_multiset(rs: RState, rs': RState, log_entry: LogEntry)
   requires rstate_valid(rs)
+  requires rstate_valid(rs')
   requires LEnvironment_Next(rs.environment, rs'.environment)
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
@@ -138,6 +141,10 @@ module Refinement_Proof_i {
   requires rs.environment.nextStep.ios[0].r.msg.LogMessage?;
   requires rs.environment.nextStep.ios[0].r.msg.log_entry == log_entry
   requires log_entry.LMRecv?
+  requires is_valid_LogMessage(rs,
+      rs.environment.nextStep.ios[0].r.src,
+      rs.environment.nextStep.ios[0].r.dst,
+      rs.environment.nextStep.ios[0].r.msg)
 
   ensures multiset_adds_one(refinement(rs').outstandingEvents, refinement(rs).outstandingEvents);
   ensures SwitchEvent(log_entry.switch, log_entry.event)
@@ -150,6 +157,17 @@ module Refinement_Proof_i {
     assert log_entry.event_id in rs.server_switches[log_entry.switch].bufferedEvents;
     assert rs.server_switches[log_entry.switch].bufferedEvents[log_entry.event_id]
         == log_entry.event;
+
+    assert log_is_valid(rs.server_switches, rs.server_logger.log);
+    assert forall entry :: entry in rs.server_logger.log ==>
+                    is_valid_log_entry(rs.server_switches, entry);
+
+    forall entry | entry in rs.server_logger.log
+      ensures !(entry.LMRecv? && entry.event_id == log_entry.event_id &&
+                entry.switch == log_entry.switch);
+    {
+      assert is_valid_log_entry(rs.server_switches, entry);
+    }
 
     assert (forall entry :: entry in rs.server_logger.log ==>
               !(entry.LMRecv? && entry.event_id == log_entry.event_id &&
@@ -243,6 +261,98 @@ module Refinement_Proof_i {
              SwitchEvent(log_entry.switch, log_entry.event)) }
       ;
 
+      assert (forall switch : EndPoint :: forall eid : int :: (
+            switch in rs.server_switches &&
+            eid in rs.server_switches[switch].bufferedEvents &&
+            (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+                !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+          ) ==> (
+            switch in rs.server_switches &&
+            eid in rs.server_switches[switch].bufferedEvents &&
+            (forall entry :: entry in rs.server_logger.log ==>
+                !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+          )
+        );
+
+      assert (set
+        switch : EndPoint, eid : int | (
+          switch in rs.server_switches &&
+          eid in rs.server_switches[switch].bufferedEvents &&
+          (forall entry :: entry in rs.server_logger.log ==>
+              !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+        ) ::
+          ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
+      ) >= (
+      set
+        switch : EndPoint, eid : int | (
+          switch in rs.server_switches &&
+          eid in rs.server_switches[switch].bufferedEvents &&
+          (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+              !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+        ) ::
+          ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
+      );
+      
+      assert (set
+        switch : EndPoint, eid : int | (
+          switch in rs.server_switches &&
+          eid in rs.server_switches[switch].bufferedEvents &&
+          (forall entry :: entry in (rs.server_logger.log + [entry_log]) ==>
+              !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+        ) ::
+          ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
+      )
+      ==
+      (
+      set
+        switch : EndPoint, eid : int | (
+          switch in rs'.server_switches &&
+          eid in rs'.server_switches[switch].bufferedEvents &&
+          (forall entry :: entry in rs'.server_logger.log ==>
+              !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+        ) ::
+          ((switch, eid), SwitchEvent(switch, rs'.server_switches[switch].bufferedEvents[eid]))
+      );
+
+      assert (set
+        switch : EndPoint, eid : int | (
+          switch in rs.server_switches &&
+          eid in rs.server_switches[switch].bufferedEvents &&
+          (forall entry :: entry in rs.server_logger.log ==>
+              !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+        ) ::
+          ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
+      ) >= (
+      set
+        switch : EndPoint, eid : int | (
+          switch in rs'.server_switches &&
+          eid in rs'.server_switches[switch].bufferedEvents &&
+          (forall entry :: entry in rs'.server_logger.log ==>
+              !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+        ) ::
+          ((switch, eid), SwitchEvent(switch, rs'.server_switches[switch].bufferedEvents[eid]))
+      );
+
+      lemma_refines_LoggerLogEvent_outstandingEvents(
+          refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log),
+          refinement_outstandingEventsSet(rs.server_switches, rs.server_logger.log),
+          (log_entry.switch, log_entry.event_id),
+          SwitchEvent(log_entry.switch, log_entry.event));
+  }
+
+  lemma lemma_refines_LoggerLogEvent_outstandingEvents<A,B>
+        (s : set<(A,B)>, s' : set<(A,B)>, key : A, t : B)
+  requires s' >= s
+  requires s' - s == {(key, t)}
+  ensures multiset_adds_one(set_to_multiset(s), set_to_multiset(s'))
+  ensures added_obj(set_to_multiset(s), set_to_multiset(s')) == t
+  {
+    if (|s| == 0) {
+    } else {
+      var y :| y in s;
+      assert y in s';
+      lemma_refines_LoggerLogEvent_outstandingEvents(s - {y}, s' - {y}, key, t);
+    }
   }
 
   /*

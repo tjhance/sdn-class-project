@@ -5,6 +5,7 @@ module Refinement_i {
 
   predicate rstate_valid(rs: RState) {
     packets_are_valid(rs)
+    && log_is_valid(rs.server_switches, rs.server_logger.log)
   }
 
   function refinement(rs: RState) : ServiceState
@@ -32,7 +33,15 @@ module Refinement_i {
       log: seq<LogEntry>
       ) : multiset<SwitchEvent>
   {
-      set_to_multiset(set
+      set_to_multiset(refinement_outstandingEventsSet(server_switches, log))
+  }
+
+  function refinement_outstandingEventsSet(
+      server_switches: map<EndPoint, NodeSwitch>,
+      log: seq<LogEntry>
+      ) : set<((EndPoint, int), SwitchEvent)>
+  {
+    set
         switch : EndPoint, eid : int | (
           switch in server_switches &&
           eid in server_switches[switch].bufferedEvents &&
@@ -40,7 +49,6 @@ module Refinement_i {
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, server_switches[switch].bufferedEvents[eid]))
-      )
   }
 
   function refinement_controllerState(
@@ -100,10 +108,15 @@ module Refinement_i {
     )
   }
 
-  predicate {:opaque} packets_are_valid(rs: RState)
+  predicate {:fuel 0,0} packets_are_valid(rs: RState)
   {
-    (forall p :: p in rs.environment.sentPackets ==>
-        is_valid_message(rs, p.src, p.dst, p.msg))
+    forall p :: p in rs.environment.sentPackets ==>
+        is_valid_message(rs, p.src, p.dst, p.msg)
+  }
+
+  predicate {:fuel 0,0} log_is_valid(switches: map<EndPoint, NodeSwitch>, log: seq<LogEntry>)
+  {
+    forall entry :: entry in log ==> is_valid_log_entry(switches, entry)
   }
 
   predicate is_valid_message(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
@@ -164,12 +177,16 @@ module Refinement_i {
   predicate is_valid_LogMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.LogMessage?
   {
-    if (msg.log_entry.LMRecv?) then (
+    is_valid_log_entry(rs.server_switches, msg.log_entry)
+  }
+
+  predicate is_valid_log_entry(switches: map<EndPoint, NodeSwitch>, entry: LogEntry)
+  {
+    if (entry.LMRecv?) then (
       // LMRecv
-         msg.log_entry.switch in rs.server_switches
-      && msg.log_entry.event_id in rs.server_switches[msg.log_entry.switch].bufferedEvents
-      && rs.server_switches[msg.log_entry.switch].bufferedEvents[msg.log_entry.event_id] ==
-            msg.log_entry.event
+         entry.switch in switches
+      && entry.event_id in switches[entry.switch].bufferedEvents
+      && switches[entry.switch].bufferedEvents[entry.event_id] == entry.event
     ) else (
       // LMProc
       true

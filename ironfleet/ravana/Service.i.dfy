@@ -58,8 +58,7 @@ module Service_i {
     |m1 - m| == 1
   }
 
-  function {:opaque}
-  added_obj<A>(m: multiset<A>, m1: multiset<A>) : A
+  function added_obj<A>(m: multiset<A>, m1: multiset<A>) : A
   requires multiset_adds_one<A>(m, m1)
   {
     var y :| y in (m1 - m);
