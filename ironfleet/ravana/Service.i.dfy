@@ -53,12 +53,12 @@ module Service_i {
     (forall k : A :: k in s ==> k in m)
   }
 
-  predicate multiset_adds_one<A>(m: multiset<A>, m1: multiset<A>) {
+  predicate {:opaque} multiset_adds_one<A>(m: multiset<A>, m1: multiset<A>) {
     |m1| == |m| + 1 &&
     |m1 - m| == 1
   }
 
-  function added_obj<A>(m: multiset<A>, m1: multiset<A>) : A
+  function {:opaque} added_obj<A>(m: multiset<A>, m1: multiset<A>) : A
   requires multiset_adds_one<A>(m, m1)
   {
     var y :| y in (m1 - m);

@@ -1,10 +1,15 @@
-include "Types.i.dfy"
-include "Refinement.i.dfy"
-include "Service.i.dfy"
-include "DistributedSystem.i.dfy"
-
+include "../Types.i.dfy"
+include "../Refinement.i.dfy"
+include "../Service.i.dfy"
+include "../DistributedSystem.i.dfy"
+include "../RefinementLemmas.i.dfy"
 
 module Refinement_Proof_LogEvent_i {
+  import opened Types_i
+  import opened Refinement_i
+  import opened Service_i
+  import opened DistributedSystem_i
+  import opened RefinementLemmas_i
 
   lemma lemma_refines_LoggerLogEvent(rs: RState, rs': RState)
   requires rstate_valid(rs)
@@ -24,6 +29,8 @@ module Refinement_Proof_LogEvent_i {
        || refinement(rs) == refinement(rs')
           
   {
+    lemma_packets_are_valid_no_sending();
+
     var s := refinement(rs);
     var s' := refinement(rs');
 
@@ -92,7 +99,7 @@ module Refinement_Proof_LogEvent_i {
           SwitchEvent(log_entry.switch, log_entry.event));
   }
 
-  lemma {:fuel log_is_valid,1,2}
+  lemma
       lemma_refines_LoggerLogEvent_multiset_helper1
       (rs: RState, rs': RState, log_entry: LogEntry)
   requires rstate_valid(rs)
@@ -136,6 +143,8 @@ module Refinement_Proof_LogEvent_i {
       { ((log_entry.switch, log_entry.event_id),
              SwitchEvent(log_entry.switch, log_entry.event)) }
   {
+    reveal_log_is_valid();
+
     assert rs'.server_logger.log == rs.server_logger.log + [log_entry];
     assert rs.server_switches == rs'.server_switches;
 

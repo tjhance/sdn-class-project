@@ -108,13 +108,13 @@ module Refinement_i {
     )
   }
 
-  predicate {:fuel 0,0} packets_are_valid(rs: RState)
+  predicate {:opaque} packets_are_valid(rs: RState)
   {
     forall p :: p in rs.environment.sentPackets ==>
         is_valid_message(rs, p.src, p.dst, p.msg)
   }
 
-  predicate {:fuel 0,0} log_is_valid(switches: map<EndPoint, NodeSwitch>, log: seq<LogEntry>)
+  predicate {:opaque} log_is_valid(switches: map<EndPoint, NodeSwitch>, log: seq<LogEntry>)
   {
     forall entry :: entry in log ==> is_valid_log_entry(switches, entry)
   }
