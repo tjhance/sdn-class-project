@@ -32,11 +32,15 @@ module Refinement_Proof_LogEvent_i {
     packet_validation_preservation(rs, rs');
     lemma_packets_are_valid_no_sending(rs, rs');
 
+    lemma_accepted_commands_are_valid(rs, rs');
+    lemma_log_is_valid(rs, rs');
+
     var s := refinement(rs);
     var s' := refinement(rs');
 
     assert rs.environment.nextStep.ios[0].LIoOpReceive?;
     assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
+    lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
 
     if (log_entry.LMRecv?) {
@@ -50,25 +54,206 @@ module Refinement_Proof_LogEvent_i {
       var event := added_obj(s'.outstandingEvents, s.outstandingEvents);
       assert event == switch_event;
 
-      var cas := controllerTransition(s.controllerState, event.switch, event.event);
+      var cas := controllerTransition(s.controllerState, switch_event.switch,
+          switch_event.event);
       var cs' := cas.0;
       var singleCommands := cas.1;
 
       assert s'.controllerState == cs';
 
-      lemma_outstandingCommands(rs, rs', singleCommands, log_entry);
+      lemma_outstandingCommands(rs, rs', singleCommands, log_entry, switch_event);
       assert s'.outstandingCommands == s.outstandingCommands + seq_to_multiset(singleCommands);
 
       assert Service_NextApplyEvent(refinement(rs), refinement(rs'));
     } else {
+      assert refinement_switchStates(rs.server_switches)
+          == refinement_switchStates(rs'.server_switches);
+
+      assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
+          == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
+
+      assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
+          == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches);
+
+      lemma_lmproc_outstandingEventsSet_matches(rs, rs', log_entry);
+
+      assert refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
+          == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log);
+
       assert s == s';
     }
   }
 
+  lemma
+  lemma_log_is_valid(rs: RState, rs': RState)
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor == rs'.endpoint_logger
+  requires Node_LoggerLogEvent(
+              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_switches == rs'.server_switches
+  ensures log_is_valid(rs'.server_switches, rs'.server_logger.log)
+  {
+    reveal_log_is_valid();
+
+    assert rs.environment.nextStep.ios[0].LIoOpReceive?;
+    assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
+    lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
+    var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
+    assert rs.server_logger.log + [log_entry] == rs'.server_logger.log;
+
+    assert is_valid_log_entry(rs.server_switches, log_entry);
+    assert forall entry :: entry in rs.server_logger.log ==>
+        is_valid_log_entry(rs.server_switches, entry);
+    assert forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+        is_valid_log_entry(rs.server_switches, entry);
+    assert forall entry :: entry in rs'.server_logger.log ==>
+        is_valid_log_entry(rs.server_switches, entry);
+    assert forall entry :: entry in rs'.server_logger.log ==>
+        is_valid_log_entry(rs'.server_switches, entry);
+  }
+
+  lemma {:axiom}
+  lemma_accepted_commands_are_valid(rs: RState, rs': RState)
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor == rs'.endpoint_logger
+  requires Node_LoggerLogEvent(
+              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_switches == rs'.server_switches
+  ensures accepted_commands_are_valid(rs'.initControllerState,
+        rs'.server_switches, rs'.server_logger.log)
+  /*
+  {
+    reveal_accepted_commands_are_valid();
+
+    var all_commands := controller_state_looking_forward(
+                rs.server_logger.log, rs.initControllerState).commands;
+    var all_commands' := controller_state_looking_forward(
+                rs'.server_logger.log, rs'.initControllerState).commands;
+
+    all_commands_grows(rs, rs', all_commands, all_commands');
+  }
+  */
+
+  lemma {:axiom}
+  all_commands_grows(rs: RState, rs': RState, commands: seq<SingleCommand>,
+          commands': seq<SingleCommand>)
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor == rs'.endpoint_logger
+  requires Node_LoggerLogEvent(
+              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_switches == rs'.server_switches
+
+  requires commands == controller_state_looking_forward(
+                rs.server_logger.log, rs.initControllerState).commands
+  requires commands' == controller_state_looking_forward(
+                rs'.server_logger.log, rs'.initControllerState).commands
+
+  ensures |commands| <= |commands'|
+  ensures commands == commands'[0 .. |commands| ]
+  /*
+  {
+    assert rs.environment.nextStep.ios[0].LIoOpReceive?;
+    assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
+    lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
+    var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
+    assert rs.server_logger.log + [log_entry] == rs'.server_logger.log;
+    
+    if (log_entry.LMProc?) {
+    } else {
+      var sac1 := controller_state_looking_forward(rs.server_logger.log, rs.initControllerState);
+      var commands'' := controllerTransition(sac1.controllerState,
+          log_entry.switch, log_entry.event).1;
+
+      assert commands' == sac1.commands + commands'';
+      assert sac1.commands == commands;
+    }  
+  }
+  */
+
+  lemma {:axiom}
+  lemma_lmproc_outstandingEventsSet_matches(rs: RState, rs': RState, log_entry: LogEntry)
+  requires rs'.server_switches == rs.server_switches
+  requires rs'.server_logger.log == rs.server_logger.log + [log_entry]
+  requires log_entry.LMProc?
+  ensures refinement_outstandingEventsSet(rs.server_switches, rs.server_logger.log)
+       == refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log)
+  /*
+  {
+    forall switch | switch in rs.server_switches
+    ensures forall eid :: eid in rs.server_switches[switch].bufferedEvents ==> (
+         (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+            !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+         == (forall entry :: entry in (rs.server_logger.log) ==>
+            !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+       )
+    {
+      forall eid | eid in rs.server_switches[switch].bufferedEvents
+      ensures (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+            !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+         == (forall entry :: entry in (rs.server_logger.log) ==>
+            !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+      {
+      }
+    }
+
+    assert refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log)
+        == (
+          set
+            switch : EndPoint, eid : int | (
+              switch in rs'.server_switches &&
+              eid in rs'.server_switches[switch].bufferedEvents &&
+              (forall entry :: entry in rs'.server_logger.log ==>
+                  !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+            ) ::
+              ((switch, eid), SwitchEvent(switch, rs'.server_switches[switch].bufferedEvents[eid]))
+          )
+        == (
+          set
+            switch : EndPoint, eid : int | (
+              switch in rs.server_switches &&
+              eid in rs.server_switches[switch].bufferedEvents &&
+              (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+                  !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+            ) ::
+              ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
+          )
+        == (
+          set
+            switch : EndPoint, eid : int | (
+              switch in rs.server_switches &&
+              eid in rs.server_switches[switch].bufferedEvents &&
+              (forall entry :: entry in (rs.server_logger.log) ==>
+                  !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
+            ) ::
+              ((switch, eid), SwitchEvent(switch, rs.server_switches[switch].bufferedEvents[eid]))
+          )
+        == refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log);
+  }
+  */
+
   lemma {:axiom}
   lemma_outstandingCommands(rs: RState, rs': RState, singleCommands: seq<SingleCommand>,
-      log_entry: LogEntry)
+      log_entry: LogEntry, event: SwitchEvent)
   requires rstate_valid(rs)
+  requires rstate_valid(rs')
 
   requires LEnvironment_Next(rs.environment, rs'.environment)
   requires rs.environment.nextStep.LEnvStepHostIos?
@@ -83,47 +268,130 @@ module Refinement_Proof_LogEvent_i {
   requires rs.environment.nextStep.ios[0].r.msg.log_entry == log_entry
   requires log_entry.LMRecv?
   requires singleCommands ==
-      controllerTransition(s.controllerState, event.switch, event.event).1
+      controllerTransition(refinement(rs).controllerState, event.switch, event.event).1
+
+  requires event == SwitchEvent(log_entry.switch, log_entry.event)
 
   ensures refinement(rs').outstandingCommands ==
       refinement(rs).outstandingCommands + seq_to_multiset(singleCommands)
   {
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
 
+    assert controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).controllerState
+        == refinement(rs).controllerState;
+
+    assert singleCommands ==
+          controllerTransition(
+              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).controllerState,
+              event.switch, event.event).1;
+
     var fwdOutstandingCommands1 :=
           controller_state_looking_forward(
               rs.server_logger.log,
               rs.initControllerState).commands;
 
+    assert rs'.server_logger.log == rs.server_logger.log + [log_entry];
+    assert rs'.initControllerState == rs.initControllerState;
+
     var fwdOutstandingCommands2 :=
           controller_state_looking_forward(
               rs'.server_logger.log,
               rs'.initControllerState).commands;
-    assert fwdOutstandingCommands2 :=
+    assert fwdOutstandingCommands2 ==
           controller_state_looking_forward(
               rs.server_logger.log + [log_entry],
-              rs.initControllerState).commands;
+              rs.initControllerState).commands
+     ==
+          controller_state_looking_forward(
+              rs.server_logger.log,
+              rs.initControllerState).commands +
+          controllerTransition(
+              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).controllerState,
+              event.switch, event.event).1
+      ==
+          controller_state_looking_forward(
+              rs.server_logger.log,
+              rs.initControllerState).commands + singleCommands;
 
-    assert 
-      set_to_multiset(set
-        command_id : int | (
-          0 <= command_id < |fwdOutstandingCommands2| &&
-          var command := fwdOutstandingCommands2[command_id];
-          command.switch in server_switches &&
-          !(command_id in server_switches[command.switch].received_command_ids)
-        ) ::
-          (command_id, fwdOutstandingCommands2[command_id])
-      ) ==
-      set_to_multiset(set
-        command_id : int | (
-          0 <= command_id < |fwdOutstandingCommands1| &&
-          var command := fwdOutstandingCommands1[command_id];
-          command.switch in server_switches &&
-          !(command_id in server_switches[command.switch].received_command_ids)
-        ) ::
-          (command_id, fwdOutstandingCommands1[command_id])
-      ) + seq_to_multiset(singleCommands)
+      lemma_command_ids_bounded(rs);
+      lemma_filter_out_accepted_commands_plus_nonaccepted(rs,
+          controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands,
+          singleCommands);
+
+      assert refinement(rs').outstandingCommands
+          == filter_out_accepted_commands(fwdOutstandingCommands2, rs.server_switches)
+          == filter_out_accepted_commands(
+              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands + singleCommands, rs.server_switches)
+          == filter_out_accepted_commands(
+              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands, rs.server_switches) + seq_to_multiset(singleCommands)
+          == refinement(rs).outstandingCommands + seq_to_multiset(singleCommands);
   }
+
+  lemma {:axiom} lemma_command_ids_bounded(rs: RState)
+  requires rstate_valid(rs)
+  ensures forall switch :: switch in rs.server_switches ==>
+          forall command_id :: command_id in rs.server_switches[switch].received_command_ids ==>
+          command_id <
+            |controller_state_looking_forward(
+                rs.server_logger.log, rs.initControllerState).commands|
+  /*
+  {
+    reveal_accepted_commands_are_valid(); 
+  }
+  */
+
+  lemma {:axiom} lemma_filter_out_accepted_commands_plus_nonaccepted(
+      rs: RState,
+      a: seq<SingleCommand>, b: seq<SingleCommand>)
+  requires forall switch :: switch in rs.server_switches ==>
+           forall command_id :: command_id in rs.server_switches[switch].received_command_ids ==>
+           command_id < |a|
+  ensures filter_out_accepted_commands(a + b, rs.server_switches) == 
+          filter_out_accepted_commands(a, rs.server_switches) + seq_to_multiset(b)
+  /*
+  {
+    reveal_seq_to_multiset();
+    if (|b| == 0) {
+      assert b == [];
+      assert a + b == a;
+      assert seq_to_multiset<SingleCommand>([]) == multiset{};
+      assert 
+          filter_out_accepted_commands(a + b, rs.server_switches) == 
+          filter_out_accepted_commands(a, rs.server_switches) == 
+          filter_out_accepted_commands(a, rs.server_switches) + multiset{} == 
+          filter_out_accepted_commands(a, rs.server_switches) + seq_to_multiset(b);
+    } else {
+      lemma_filter_out_accepted_commands_plus_nonaccepted(rs, a, b[0 .. |b| - 1]);
+      var command := b[|b| - 1];
+      if (command.switch in rs.server_switches &&
+           ((|a| + |b| - 1) in rs.server_switches[command.switch].received_command_ids)) {
+        assert (|a| + |b| - 1) < |a|;
+        assert false;
+      }
+      assert seq_to_multiset(b) == seq_to_multiset(b[0..|b|-1]) + multiset{b[|b|-1]};
+
+      assert b[|b| - 1] == (a+b)[|a| + |b| - 1];
+      assert (a + b)[0 .. |a + b| - 1] == a + b[0 .. |b| - 1];
+
+      assert filter_out_accepted_commands(a + b, rs.server_switches)
+          == filter_out_accepted_commands((a + b)[0 .. |a + b| - 1], rs.server_switches) +
+                (
+                  if !(
+                      command.switch in rs.server_switches &&
+                      (|a + b| - 1) in
+                        rs.server_switches[command.switch].received_command_ids)
+                  then multiset{(a + b)[|a+b|-1]} else multiset{}
+                )
+          == filter_out_accepted_commands((a + b)[0 .. |a + b| - 1], rs.server_switches) +
+              multiset{(a + b)[|a+b|-1]}
+          == filter_out_accepted_commands(a + b[0 .. |b| - 1], rs.server_switches) +
+              multiset{command}
+          == filter_out_accepted_commands(a, rs.server_switches) +
+             seq_to_multiset(b[0 .. |b| - 1]) + multiset{command}
+          == filter_out_accepted_commands(a, rs.server_switches) + seq_to_multiset(b);
+    }
+  }
+  */
 
   lemma {:axiom} packet_validation_preservation(rs: RState, rs': RState)
   requires rstate_valid(rs)

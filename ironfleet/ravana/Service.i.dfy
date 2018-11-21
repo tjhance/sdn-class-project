@@ -70,7 +70,7 @@ module Service_i {
     if s == [] then
       multiset{}
     else (
-      seq_to_multiset(s[1..]) + multiset{s[0]}
+      seq_to_multiset(s[0..|s|-1]) + multiset{s[|s|-1]}
     )
   }
 }

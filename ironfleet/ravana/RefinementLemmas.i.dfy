@@ -45,4 +45,13 @@ module RefinementLemmas_i {
       }
   }
   */
+
+  lemma lemma_received_packet_is_valid(rs: RState, packet: LPacket<EndPoint, RavanaMessage>)
+  requires rstate_valid(rs)
+  requires packet == rs.environment.nextStep.ios[0].r
+  ensures is_valid_message(rs, packet.src, packet.dst, packet.msg)
+  {
+    assert packets_are_valid(rs);
+    reveal_packets_are_valid();
+  }
 }

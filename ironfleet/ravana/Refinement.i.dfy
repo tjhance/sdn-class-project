@@ -6,6 +6,8 @@ module Refinement_i {
   predicate rstate_valid(rs: RState) {
     packets_are_valid(rs)
     && log_is_valid(rs.server_switches, rs.server_logger.log)
+    && accepted_commands_are_valid(rs.initControllerState,
+        rs.server_switches, rs.server_logger.log)
   }
 
   function refinement(rs: RState) : ServiceState
@@ -63,15 +65,24 @@ module Refinement_i {
   {
       var fwdOutstandingCommands := 
           controller_state_looking_forward(log, initControllerState).commands;
-      set_to_multiset(set
-        command_id : int | (
-          0 <= command_id < |fwdOutstandingCommands| &&
-          var command := fwdOutstandingCommands[command_id];
-          command.switch in server_switches &&
-          !(command_id in server_switches[command.switch].received_command_ids)
-        ) ::
-          (command_id, fwdOutstandingCommands[command_id])
+      filter_out_accepted_commands(fwdOutstandingCommands, server_switches)
+  }
+
+  function filter_out_accepted_commands(
+      commands: seq<SingleCommand>,
+      server_switches: map<EndPoint, NodeSwitch>) : multiset<SingleCommand>
+  {
+    if (|commands| == 0) then (
+      multiset{}
+    ) else (
+      var command := commands[|commands| - 1];
+      filter_out_accepted_commands(commands[0 .. |commands| - 1], server_switches) + (
+        if !(
+            command.switch in server_switches &&
+            (|commands| - 1) in server_switches[command.switch].received_command_ids)
+        then multiset{command} else multiset{}
       )
+    )
   }
 
   datatype StateAndCommands = StateAndCommands(
@@ -117,6 +128,19 @@ module Refinement_i {
   predicate {:opaque} log_is_valid(switches: map<EndPoint, NodeSwitch>, log: seq<LogEntry>)
   {
     forall entry :: entry in log ==> is_valid_log_entry(switches, entry)
+  }
+
+  predicate {:opaque} accepted_commands_are_valid(
+      initControllerState: ControllerState,
+      switches: map<EndPoint, NodeSwitch>, log: seq<LogEntry>)
+  {
+    var all_commands := controller_state_looking_forward(
+                log, initControllerState).commands;
+
+    forall ep :: ep in switches ==>
+      forall command_id :: command_id in switches[ep].received_command_ids ==>
+        0 <= command_id < |all_commands| &&
+        all_commands[command_id].switch == ep
   }
 
   predicate is_valid_message(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
