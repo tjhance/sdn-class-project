@@ -11,6 +11,8 @@ module Refinement_i {
     && accepted_commands_are_valid(rs.initControllerState,
         rs.server_switches, rs.server_logger.log)
     && switches_valid(rs.server_switches)
+
+    && controllers_recved_events_valid(rs.server_switches, rs.server_controllers)
   }
 
   function refinement(rs: RState) : ServiceState
@@ -225,5 +227,16 @@ module Refinement_i {
   predicate switch_valid(switch: NodeSwitch)
   {
     (forall event_id :: event_id in switch.bufferedEvents ==> event_id < switch.event_id)
+  }
+
+  predicate {:opaque} controllers_recved_events_valid(
+      switches: map<EndPoint, NodeSwitch>,
+      controllers: map<EndPoint, NodeController>)
+  {
+    forall cn :: cn in controllers ==>
+      forall sip :: sip in controllers[cn].recved_events ==>
+        sip.switch in switches &&
+        sip.event_id in switches[sip.switch].bufferedEvents &&
+        switches[sip.switch].bufferedEvents[sip.event_id] == controllers[cn].recved_events[sip]
   }
 }

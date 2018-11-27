@@ -111,7 +111,8 @@ module Protocol_Node_i {
     ios[0].LIoOpSend? &&
     var send_packet := ios[0].s;
     send_packet.dst == s.config.node_logger &&
-    send_packet.msg == LogMessage(LMRecv(p.switch, s.recved_events[p], p.event_id))
+    send_packet.msg == LogMessage(LMRecv(p.switch, s.recved_events[p], p.event_id)) &&
+    s == s'
   }
 
   predicate Node_LoggerLogEvent(s: NodeLogger, s': NodeLogger, ios: seq<RavanaIo>) {

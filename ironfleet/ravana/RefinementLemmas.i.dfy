@@ -104,6 +104,44 @@ module RefinementLemmas_i {
   }
   */
 
+  lemma {:axiom} lemma_packets_are_valid_send_and_recv(rs: RState, rs': RState)
+  requires rstate_valid(rs)
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires packet_validation_preserved(rs, rs')
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires |rs.environment.nextStep.ios| == 2
+  requires ! rs.environment.nextStep.ios[0].LIoOpSend?
+  requires rs.environment.nextStep.ios[1].LIoOpSend?
+  requires is_valid_message(rs', 
+      rs.environment.nextStep.ios[1].s.src,
+      rs.environment.nextStep.ios[1].s.dst,
+      rs.environment.nextStep.ios[1].s.msg)
+  ensures packets_are_valid(rs')
+  /*
+  {
+      assert rs'.environment.sentPackets == rs.environment.sentPackets +
+          (set io | io in rs.environment.nextStep.ios && io.LIoOpSend? :: io.s);
+
+      assert rs'.environment.sentPackets == rs.environment.sentPackets +
+          { rs.environment.nextStep.ios[1].s };
+
+      reveal_packets_are_valid();
+      assert packets_are_valid(rs);
+      assert forall p :: p in rs.environment.sentPackets ==> is_valid_message(rs, p.src, p.dst, p.msg);
+
+      forall p | p in rs'.environment.sentPackets
+        ensures is_valid_message(rs', p.src, p.dst, p.msg)
+      {
+        if (p == rs.environment.nextStep.ios[1].s) {
+        } else {
+          assert p in rs.environment.sentPackets;
+          assert is_valid_message(rs, p.src, p.dst, p.msg);
+          reveal_packet_validation_preserved();
+        }
+      }
+  }
+  */
+
   lemma {:axiom} lemma_outstanding_commands_eq(rs: RState, rs': RState)
   requires  rstate_valid(rs)
 
@@ -226,6 +264,31 @@ module RefinementLemmas_i {
        == refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log)
   /*
   {
+  }
+  */
+
+  lemma {:axiom} lemma_controllers_recved_events_valid_if_recved_events_unchanged(
+      rs: RState, rs': RState)
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_controllers
+  requires rs.environment.nextStep.actor in rs'.server_controllers
+  requires rs.server_controllers[rs.environment.nextStep.actor].recved_events ==
+           rs'.server_controllers[rs.environment.nextStep.actor].recved_events
+  requires rs.server_switches == rs'.server_switches
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_controllers == rs.server_controllers[
+        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+  ensures controllers_recved_events_valid(
+      rs'.server_switches,
+      rs'.server_controllers)
+  /*
+  {
+    reveal_controllers_recved_events_valid();
   }
   */
 }
