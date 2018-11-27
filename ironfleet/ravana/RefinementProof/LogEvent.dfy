@@ -471,7 +471,7 @@ module Refinement_Proof_LogEvent_i {
       lemma_refines_LoggerLogEvent_multiset_helper1(rs, rs', log_entry);
       lemma_refines_LoggerLogEvent_multiset_helper2(rs, rs', log_entry);
 
-      lemma_refines_LoggerLogEvent_outstandingEvents(
+      set_diff_impl_multiset_adds_one(
           refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log),
           refinement_outstandingEventsSet(rs.server_switches, rs.server_logger.log),
           (log_entry.switch, log_entry.event_id),
@@ -779,67 +779,4 @@ module Refinement_Proof_LogEvent_i {
       );
   }
   */
-
-  lemma {:axiom} lemma_refines_LoggerLogEvent_outstandingEvents<A,B>
-        (s : set<(A,B)>, s' : set<(A,B)>, key : A, t : B)
-  requires s' >= s
-  requires s' - s == {(key, t)}
-  ensures multiset_adds_one(set_to_multiset(s), set_to_multiset(s'))
-  ensures added_obj(set_to_multiset(s), set_to_multiset(s')) == t
-  /*
-  {
-    if (|s| == 0) {
-      assert set_to_multiset(s) == multiset{};
-      assert set_to_multiset(s') == multiset{t};
-      var y :| y in set_to_multiset(s') - set_to_multiset(s);
-      assert y == added_obj(set_to_multiset(s), set_to_multiset(s'));
-      assert set_to_multiset(s') - set_to_multiset(s) == multiset{t};
-      assert y == t;
-    } else {
-      var y :| y in s;
-      assert y in s';
-      lemma_refines_LoggerLogEvent_outstandingEvents(s - {y}, s' - {y}, key, t);
-      assert set_to_multiset(s) == set_to_multiset(s - {y}) + multiset{y.1};
-      assert set_to_multiset(s') == set_to_multiset(s' - {y}) + multiset{y.1};
-
-      assert |set_to_multiset(s') - set_to_multiset(s)| ==
-              |(set_to_multiset(s' - {y}) + multiset{t}) - 
-              (set_to_multiset(s - {y}) + multiset{t})|
-          == |set_to_multiset(s' - {y}) - set_to_multiset(s - {y})|
-          == 1;
-      
-      assert |set_to_multiset(s')| - |set_to_multiset(s)| ==
-              |set_to_multiset(s' - {y}) + multiset{t}| - 
-              |set_to_multiset(s - {y}) + multiset{t}|
-        ==
-              |set_to_multiset(s' - {y})| + |multiset{t}| - 
-              (|set_to_multiset(s - {y})| + |multiset{t}|)
-        ==
-              |set_to_multiset(s' - {y})| - |set_to_multiset(s - {y})|
-        == 1; 
-      
-      assert added_obj(set_to_multiset(s - {y}), set_to_multiset(s' - {y})) == t;
-
-      assert t in ((set_to_multiset(s' - {y})) - set_to_multiset(s - {y}));
-
-      assert set_to_multiset(s - {y}) == set_to_multiset(s) - multiset{y.1};
-      assert set_to_multiset(s' - {y}) == set_to_multiset(s') - multiset{y.1};
-
-      assert ((set_to_multiset(s' - {y})) - set_to_multiset(s - {y}))
-        == (set_to_multiset(s') - multiset{y.1}) - (set_to_multiset(s) - multiset{y.1})
-        == set_to_multiset(s') - set_to_multiset(s);
-
-      assert t in set_to_multiset(s') - set_to_multiset(s);
-
-      assert t in ((set_to_multiset(s')) - set_to_multiset(s));
-
-      assert forall t' :: t' in (set_to_multiset(s') - set_to_multiset(s)) ==> t' == t;
-
-      var z :| z in (set_to_multiset(s') - set_to_multiset(s));
-      assert z == t;
-      assert z == added_obj(set_to_multiset(s), set_to_multiset(s'));
-    }
-  }
-  */
-
 }

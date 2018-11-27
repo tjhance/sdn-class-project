@@ -1,7 +1,9 @@
 include "Types.i.dfy"
+include "Collections.dfy"
 
 module Refinement_i {
   import opened Types_i
+  import opened Collections_i
 
   predicate rstate_valid(rs: RState) {
     packets_are_valid(rs)
@@ -104,18 +106,6 @@ module Refinement_i {
         var (cs'', commands) := controllerTransition(sac1.controllerState, elem.switch, elem.event);
         StateAndCommands(cs'', sac1.commands + commands)
       )
-    )
-  }
-
-  function set_to_multiset<A, B>(m: set<(A, B)>) : multiset<B>
-  {
-    if |m| == 0 then
-      multiset{}
-    else (
-      var y :| y in m;
-      var (a, b) := y;
-      var m' := m - {y};
-      set_to_multiset(m') + multiset{b}
     )
   }
 

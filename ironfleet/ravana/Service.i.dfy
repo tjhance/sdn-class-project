@@ -45,32 +45,4 @@ module Service_i {
     s'.switchStates == s.switchStates[command.switch :=
         switchTransition(s.switchStates[command.switch], command.command) ]
   }
-
-  // helpers
-
-  predicate {:opaque} keys_match<A, B>(m: map<A, B>, s: set<A>) {
-    (forall k : A :: k in m ==> k in s) &&
-    (forall k : A :: k in s ==> k in m)
-  }
-
-  predicate {:opaque} multiset_adds_one<A>(m: multiset<A>, m1: multiset<A>) {
-    |m1| == |m| + 1 &&
-    |m1 - m| == 1
-  }
-
-  function {:opaque} added_obj<A>(m: multiset<A>, m1: multiset<A>) : A
-  requires multiset_adds_one<A>(m, m1)
-  {
-    var y :| y in (m1 - m);
-    y
-  }
-
-  function {:opaque} seq_to_multiset<A>(s: seq<A>) : multiset<A>
-  {
-    if s == [] then
-      multiset{}
-    else (
-      seq_to_multiset(s[0..|s|-1]) + multiset{s[|s|-1]}
-    )
-  }
 }
