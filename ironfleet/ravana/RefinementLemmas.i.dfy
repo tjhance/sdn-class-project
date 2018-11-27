@@ -292,9 +292,10 @@ module RefinementLemmas_i {
   }
   */
 
-  lemma lemma_controllers_log_valid_if_log_copy_unchanged(
-      rs: RState, rs': RState)
+  lemma
   {:axiom}
+  lemma_controllers_log_valid_if_log_copy_unchanged(
+      rs: RState, rs': RState)
   requires rstate_valid(rs)
 
   requires LEnvironment_Next(rs.environment, rs'.environment)
