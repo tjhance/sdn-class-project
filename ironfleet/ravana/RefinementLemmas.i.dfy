@@ -181,4 +181,51 @@ module RefinementLemmas_i {
     reveal_accepted_commands_are_valid();
   }
   */
+
+  lemma {:axiom} lemma_outstanding_events_eq(rs: RState, rs': RState)
+  requires  rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_switches
+  requires rs.environment.nextStep.actor in rs'.server_switches
+  requires rs.server_switches[rs.environment.nextStep.actor].bufferedEvents ==
+           rs'.server_switches[rs.environment.nextStep.actor].bufferedEvents
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_switches == rs.server_switches[
+        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+
+  ensures refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
+       == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log)
+  /*
+  {
+    lemma_outstanding_events_set_eq(rs, rs');
+  }
+  */
+
+  lemma {:axiom} lemma_outstanding_events_set_eq(rs: RState, rs': RState)
+  requires  rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_switches
+  requires rs.environment.nextStep.actor in rs'.server_switches
+  requires rs.server_switches[rs.environment.nextStep.actor].bufferedEvents ==
+           rs'.server_switches[rs.environment.nextStep.actor].bufferedEvents
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_switches == rs.server_switches[
+        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+
+  ensures refinement_outstandingEventsSet(rs.server_switches, rs.server_logger.log)
+       == refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log)
+  /*
+  {
+  }
+  */
 }

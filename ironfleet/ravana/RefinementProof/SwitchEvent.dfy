@@ -457,4 +457,6 @@ module Refinement_Proof_InitNewMaster {
       assert switch_valid(rs.server_switches[ep]);
     }
   }
+
+
 }

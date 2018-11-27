@@ -78,6 +78,7 @@ module Protocol_Node_i {
           s: NodeSwitch, s': NodeSwitch,
           event_id: int, ios: seq<RavanaIo>) {
       |ios| == 1 && ios[0].LIoOpSend? &&
+      s' == s &&
       event_id in s.bufferedEvents &&
       var event := s.bufferedEvents[event_id];
       var packet := ios[0].s;
