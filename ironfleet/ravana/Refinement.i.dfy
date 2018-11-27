@@ -14,6 +14,8 @@ module Refinement_i {
 
     && controllers_recved_events_valid(rs.server_switches, rs.server_controllers)
     && controllers_log_valid(rs.server_logger.log, rs.server_controllers)
+    && controllers_state_correct(rs.initControllerState, rs.server_controllers,
+        rs.server_switches)
   }
 
   function refinement(rs: RState) : ServiceState
@@ -262,4 +264,73 @@ module Refinement_i {
   {
     |a| <= |b| && a == b[0 .. |a|]
   }
+
+  predicate {:opaque} controllers_state_correct(
+      init: ControllerState,
+      controllers: map<EndPoint, NodeController>,
+      switches: map<EndPoint, NodeSwitch>)
+  {
+    forall ep :: ep in controllers ==>
+        controller_state_correct(init, controllers[ep], switches)
+  }
+
+  predicate controller_state_correct(init: ControllerState, s: NodeController,
+      switches: map<EndPoint, NodeSwitch>)
+  {
+    0 <= s.idx <= |s.log_copy|
+    && s.controllerState ==
+        controller_state_looking_forward(s.log_copy[0 .. s.idx], init).controllerState
+    && (forall xid :: xid in s.buffered_commands ==>
+        buffered_commands_correct(init, xid, s.log_copy, s.buffered_commands[xid], switches)
+       )
+  }
+
+  predicate buffered_commands_correct(
+      init: ControllerState,
+      xid: int,
+      log: seq<LogEntry>,
+      comms: map<int /* command id */, SingleCommand>,
+      switches: map<EndPoint, NodeSwitch>)
+  {
+    0 <= xid < |log| &&
+    log[xid].LMRecv? &&
+    var command_id_base :=
+        |controller_state_looking_forward(log[0 .. xid], init).commands|;
+    var commands := controllerTransition(
+      controller_state_looking_forward(log[0 .. xid], init).controllerState,
+      log[xid].switch,
+      log[xid].event).1;
+    all_commands_in_map_good(comms, commands, command_id_base)
+    //&& all_commands_in_list_good(comms, commands, command_id_base, switches)
+  }
+
+  predicate all_commands_in_map_good(
+      comms: map<int /* command id */, SingleCommand>,
+      commands: seq<SingleCommand>,
+      command_id_base: int)
+  {
+    forall command_id :: command_id in comms ==>
+        command_id_base <= command_id < command_id_base + |commands| &&
+        commands[command_id - command_id_base] == comms[command_id]
+  }
+
+  /*
+  predicate all_commands_in_list_good(
+      comms: map<int /* command id */, SingleCommand>,
+      commands: seq<SingleCommand>,
+      command_id_base: int,
+      switches: map<EndPoint, NodeSwitch>)
+  {
+    forall command_id :: command_id_base <= command_id < command_id_base + |commands| ==>
+      (
+        command_id in comms
+        ||
+        (
+          commands[command_id - command_id_base].switch in switches &&
+          command_id in
+              switches[commands[command_id - command_id_base].switch].received_command_ids
+        )
+      )
+  }
+  */
 }
