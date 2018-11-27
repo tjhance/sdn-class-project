@@ -13,6 +13,7 @@ module Refinement_i {
     && switches_valid(rs.server_switches)
 
     && controllers_recved_events_valid(rs.server_switches, rs.server_controllers)
+    && controllers_log_valid(rs.server_logger.log, rs.server_controllers)
   }
 
   function refinement(rs: RState) : ServiceState
@@ -218,7 +219,7 @@ module Refinement_i {
   predicate is_valid_LogBroadcastMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.LogBroadcastMessage?
   {
-    true
+    is_prefix(msg.full_log, rs.server_logger.log)
   }
 
   predicate {:opaque} switches_valid(switches: map<EndPoint, NodeSwitch>)
@@ -240,5 +241,25 @@ module Refinement_i {
         sip.switch in switches &&
         sip.event_id in switches[sip.switch].bufferedEvents &&
         switches[sip.switch].bufferedEvents[sip.event_id] == controllers[cn].recved_events[sip]
+  }
+  
+  predicate {:opaque} controllers_log_valid(
+      full_log: seq<LogEntry>,
+      controllers: map<EndPoint, NodeController>)
+  {
+    forall ep :: ep in controllers ==>
+        controller_log_valid(full_log, controllers[ep])
+  }
+
+  predicate controller_log_valid(
+      full_log: seq<LogEntry>,
+      controller: NodeController)
+  {
+    is_prefix(controller.log_copy, full_log)
+  }
+
+  predicate is_prefix(a: seq<LogEntry>, b: seq<LogEntry>)
+  {
+    |a| <= |b| && a == b[0 .. |a|]
   }
 }

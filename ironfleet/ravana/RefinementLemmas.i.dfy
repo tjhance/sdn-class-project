@@ -291,4 +291,30 @@ module RefinementLemmas_i {
     reveal_controllers_recved_events_valid();
   }
   */
+
+  lemma lemma_controllers_log_valid_if_log_copy_unchanged(
+      rs: RState, rs': RState)
+  {:axiom}
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_controllers
+  requires rs.environment.nextStep.actor in rs'.server_controllers
+  requires rs.server_controllers[rs.environment.nextStep.actor].log_copy ==
+           rs'.server_controllers[rs.environment.nextStep.actor].log_copy
+  requires rs.server_switches == rs'.server_switches
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_controllers == rs.server_controllers[
+        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+  ensures controllers_log_valid(
+      rs'.server_logger.log,
+      rs'.server_controllers)
+  /*
+  {
+    reveal_controllers_log_valid();
+  }
+  */
 }
