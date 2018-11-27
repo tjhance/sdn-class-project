@@ -40,7 +40,7 @@ module Refinement_Proof_LogEvent_i {
 
     assert rs.environment.nextStep.ios[0].LIoOpReceive?;
     assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
-    lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
+    lemma_received_packet_is_valid(rs, rs', rs.environment.nextStep.ios[0].r);
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
 
     if (log_entry.LMRecv?) {
@@ -103,7 +103,7 @@ module Refinement_Proof_LogEvent_i {
 
     assert rs.environment.nextStep.ios[0].LIoOpReceive?;
     assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
-    lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
+    lemma_received_packet_is_valid(rs, rs', rs.environment.nextStep.ios[0].r);
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
     assert rs.server_logger.log + [log_entry] == rs'.server_logger.log;
 

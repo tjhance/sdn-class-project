@@ -3,7 +3,7 @@ include "Collections.dfy"
 
 module Refinement_i {
   import opened Types_i
-  import opened Collections_i
+  import opened Collections
 
   predicate rstate_valid(rs: RState) {
     packets_are_valid(rs)

@@ -1,7 +1,9 @@
 include "Types.i.dfy"
+include "Collections.dfy"
 
 module Service_i {
   import opened Types_i
+  import opened Collections
 
   predicate Service_Init(s: ServiceState, switches: set<EndPoint>) {
     s.outstandingCommands == multiset{} &&
