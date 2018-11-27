@@ -60,6 +60,7 @@ module Protocol_Node_i {
     (exists event :: Node_SwitchEvent(s, s', event, ios)) ||
     (exists event_id :: Node_SwitchEventSend(s, s', event_id, ios)) ||
     Node_SwitchRecvCommand(s, s', ios) ||
+    (exists command_id :: Node_SwitchRecvCommandSendAck(s, s', command_id, ios)) ||
     Node_SwitchNewMaster(s, s', ios)
   }
 
@@ -211,39 +212,27 @@ module Protocol_Node_i {
 
   predicate Node_SwitchRecvCommand(
       s: NodeSwitch, s': NodeSwitch, ios: seq<RavanaIo>) {
-    |ios| >= 1 &&
+    |ios| == 1 &&
     ios[0].LIoOpReceive? &&
     var recv_packet := ios[0].r;
     recv_packet.msg.CommandMessage? &&
     var command := recv_packet.msg.command;
     var command_id := recv_packet.msg.command_id;
-    (
-      // not from the master: just ignore it
-      recv_packet.src != s.master &&
-      |ios| == 1 &&
-      s' == s
-    ) ||
-    (
-      // from the master
-      recv_packet.src == s.master &&
+    recv_packet.src == s.master &&
 
-      // send an ACK in any case
-      |ios| == 2 &&
-      ios[1].LIoOpSend? &&
-      var send_packet := ios[1].s;
-      send_packet.msg == CommandAck(command_id) &&
+    !(command_id in s.received_command_ids) &&
+    s' == s.(received_command_ids := s.received_command_ids + [command_id])
+           .(switchState := switchTransition(s.switchState, command))
+  }
 
-      ((
-        // already got this one, don't do anything else
-        (command_id in s.received_command_ids) &&
-        s' == s
-      ) || (
-        // apply to state, save the command_id
-        !(command_id in s.received_command_ids) &&
-        s' == s.(received_command_ids := s.received_command_ids + [command_id])
-               .(switchState := switchTransition(s.switchState, command))
-      ))
-    )
+  predicate Node_SwitchRecvCommandSendAck(
+      s: NodeSwitch, s': NodeSwitch, command_id: int, ios: seq<RavanaIo>) {
+    |ios| == 1 &&
+    ios[0].LIoOpSend? &&
+    var send_packet := ios[0].s;
+    (command_id in s.received_command_ids) &&
+    send_packet.msg == CommandAck(command_id) &&
+    s' == s
   }
 
   predicate Node_ControllerRecvAck(

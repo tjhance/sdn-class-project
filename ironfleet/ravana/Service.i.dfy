@@ -38,7 +38,7 @@ module Service_i {
 
   predicate Service_NextApplyCommand(s: ServiceState, s': ServiceState) {
     s.controllerState == s'.controllerState &&
-    s.outstandingCommands == s'.outstandingCommands &&
+    s.outstandingEvents == s'.outstandingEvents &&
 
     multiset_adds_one(s'.outstandingCommands, s.outstandingCommands) &&
     var command := added_obj(s'.outstandingCommands, s.outstandingCommands);

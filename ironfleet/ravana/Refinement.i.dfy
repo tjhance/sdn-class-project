@@ -162,7 +162,10 @@ module Refinement_i {
   predicate is_valid_CommandMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.CommandMessage?
   {
-    true
+    var all_commands := controller_state_looking_forward(
+                rs.server_logger.log, rs.initControllerState).commands;
+    0 <= msg.command_id < |all_commands| &&
+    all_commands[msg.command_id] == SingleCommand(dst, msg.command)
   }
 
   predicate is_valid_CommandAck(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
