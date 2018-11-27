@@ -152,7 +152,9 @@ module Refinement_i {
   predicate is_valid_EventMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.EventMessage?
   {
-    true
+    src in rs.server_switches &&
+    msg.event_id in rs.server_switches[src].bufferedEvents &&
+    rs.server_switches[src].bufferedEvents[msg.event_id] == msg.event
   }
 
   predicate is_valid_EventAck(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
