@@ -10,6 +10,7 @@ module Refinement_i {
     && log_is_valid(rs.server_switches, rs.server_logger.log)
     && accepted_commands_are_valid(rs.initControllerState,
         rs.server_switches, rs.server_logger.log)
+    && switches_valid(rs.server_switches)
   }
 
   function refinement(rs: RState) : ServiceState
@@ -211,5 +212,15 @@ module Refinement_i {
   requires msg.LogBroadcastMessage?
   {
     true
+  }
+
+  predicate {:opaque} switches_valid(switches: map<EndPoint, NodeSwitch>)
+  {
+    forall ep :: ep in switches ==> switch_valid(switches[ep])
+  }
+
+  predicate switch_valid(switch: NodeSwitch)
+  {
+    (forall event_id :: event_id in switch.bufferedEvents ==> event_id < switch.event_id)
   }
 }

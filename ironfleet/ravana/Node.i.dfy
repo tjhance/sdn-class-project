@@ -58,6 +58,7 @@ module Protocol_Node_i {
 
   predicate NodeNext_Switch(s: NodeSwitch, s': NodeSwitch, ios: seq<RavanaIo>) {
     (exists event :: Node_SwitchEvent(s, s', event, ios)) ||
+    (exists event_id :: Node_SwitchEventSend(s, s', event_id, ios)) ||
     Node_SwitchRecvCommand(s, s', ios) ||
     Node_SwitchNewMaster(s, s', ios)
   }
@@ -70,10 +71,17 @@ module Protocol_Node_i {
       s' == s.
           (bufferedEvents := s.bufferedEvents[s.event_id := event]).
           (event_id := s.event_id + 1) &&
-      |ios| == 1 && ios[0].LIoOpSend? &&
+      |ios| == 0
+  }
 
+  predicate Node_SwitchEventSend(
+          s: NodeSwitch, s': NodeSwitch,
+          event_id: int, ios: seq<RavanaIo>) {
+      |ios| == 1 && ios[0].LIoOpSend? &&
+      event_id in s.bufferedEvents &&
+      var event := s.bufferedEvents[event_id];
       var packet := ios[0].s;
-          packet.msg == EventMessage(event, s.event_id)
+          packet.msg == EventMessage(event, event_id)
        && packet.dst == s.master
   }
 

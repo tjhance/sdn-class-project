@@ -103,4 +103,82 @@ module RefinementLemmas_i {
       }
   }
   */
+
+  lemma {:axiom} lemma_outstanding_commands_eq(rs: RState, rs': RState)
+  requires  rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_switches
+  requires rs.environment.nextStep.actor in rs'.server_switches
+  requires rs.server_switches[rs.environment.nextStep.actor].received_command_ids ==
+           rs'.server_switches[rs.environment.nextStep.actor].received_command_ids
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_switches == rs.server_switches[
+        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+
+  ensures refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState,
+          rs.server_switches) ==
+          refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState,
+          rs'.server_switches)
+  /*
+  {
+    var fwdOutstandingCommands := 
+        controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands;
+    lemma_filter_out_accepted_commands_eq(rs, rs', fwdOutstandingCommands);
+  }
+
+  lemma lemma_filter_out_accepted_commands_eq(rs: RState, rs': RState, commands: seq<SingleCommand>)
+  requires  rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_switches
+  requires rs.environment.nextStep.actor in rs'.server_switches
+  requires rs.server_switches[rs.environment.nextStep.actor].received_command_ids ==
+           rs'.server_switches[rs.environment.nextStep.actor].received_command_ids
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_switches == rs.server_switches[
+        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+
+  ensures filter_out_accepted_commands(commands, rs.server_switches)
+       == filter_out_accepted_commands(commands, rs'.server_switches)
+  {
+    if (|commands| > 0) {
+      lemma_filter_out_accepted_commands_eq(rs, rs', commands[0 .. |commands| - 1]);
+    }
+  }
+  */
+
+  lemma {:axiom}
+  lemma_accepted_commands_are_valid_if_received_command_ids_unchanged
+  (rs: RState, rs': RState)
+  requires  rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.server_switches
+  requires rs.environment.nextStep.actor in rs'.server_switches
+  requires rs.server_switches[rs.environment.nextStep.actor].received_command_ids ==
+           rs'.server_switches[rs.environment.nextStep.actor].received_command_ids
+  requires rs.server_controllers == rs'.server_controllers
+  requires rs.server_logger == rs'.server_logger
+  requires rs'.server_switches == rs.server_switches[
+        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+
+  ensures accepted_commands_are_valid(rs'.initControllerState,
+        rs'.server_switches, rs'.server_logger.log)
+  /*
+  {
+    reveal_accepted_commands_are_valid();
+  }
+  */
 }
