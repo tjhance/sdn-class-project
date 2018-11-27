@@ -293,7 +293,8 @@ module Protocol_Node_i {
     s'.clients == s.clients &&
     s'.log == s.log &&
     |s'.master_log| >= 1 &&
-    s.master_log == s'.master_log[0 .. |s'.master_log| - 1]
+    s.master_log == s'.master_log[0 .. |s'.master_log| - 1] &&
+    |ios| == 0
   }
 
   predicate Node_LoggerInitNewMasterMsg(

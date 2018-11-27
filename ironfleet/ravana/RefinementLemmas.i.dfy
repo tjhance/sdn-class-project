@@ -47,6 +47,7 @@ module RefinementLemmas_i {
   */
 
   lemma
+  {:axiom}
   {:fuel is_valid_message,0,0}
   lemma_received_packet_is_valid(
       rs: RState, rs': RState,
@@ -58,11 +59,13 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.ios[0].LIoOpReceive?
   requires packet == rs.environment.nextStep.ios[0].r
   ensures is_valid_message(rs, packet.src, packet.dst, packet.msg)
+  /*
   {
     assert packets_are_valid(rs);
     assert packet in rs.environment.sentPackets;
     reveal_packets_are_valid();
   }
+  */
 
   lemma {:axiom} lemma_packets_are_valid_sending_1(rs: RState, rs': RState)
   requires rstate_valid(rs)

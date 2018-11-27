@@ -11,7 +11,7 @@ module Refinement_Proof_LogEvent_i {
   import opened DistributedSystem_i
   import opened RefinementLemmas_i
 
-  function conditions(rs: RState, rs': RState)
+  predicate conditions(rs: RState, rs': RState)
   {
     rstate_valid(rs)
 
@@ -51,6 +51,43 @@ module Refinement_Proof_LogEvent_i {
 
   lemma lemma_packets_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
+  ensures packets_are_valid(rs')
   {
+    packet_validation_preservation(rs, rs');
+    lemma_packets_are_valid_no_sending(rs, rs');
+  }
+
+  lemma packet_validation_preservation(rs: RState, rs': RState)
+  requires conditions(rs, rs')
+  ensures packet_validation_preserved(rs, rs')
+  {
+    forall p : LPacket<EndPoint, RavanaMessage>
+    ensures 
+        is_valid_message(rs, p.src, p.dst, p.msg) ==>
+        is_valid_message(rs', p.src, p.dst, p.msg)
+    {
+      if (is_valid_message(rs, p.src, p.dst, p.msg)) {
+        match p.msg
+          case EventMessage(event: Event, event_id: int) => {
+          }
+          case EventAck(event_ack_id: int) => {
+          }
+          case CommandMessage(command: Command, command_id: int) => {
+          }
+          case CommandAck(command_ack_id: int) => {
+          }
+          case InitNewMaster(leader_id: int) => {
+          }
+          case NewMaster(master_id: int) => {
+          }
+          case NewMasterAck => {
+          }
+          case LogMessage(log_entry: LogEntry) => {
+          }
+          case LogBroadcastMessage(full_log: seq<LogEntry>) => {
+          }
+      }
+    }
+    reveal_packet_validation_preserved();
   }
 }
