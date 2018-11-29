@@ -19,17 +19,17 @@ module Refinement_Proof_ControllerLogEvent {
     && rs.environment.nextStep.LEnvStepHostIos?
     && rs.endpoint_logger == rs'.endpoint_logger
     && rs.initControllerState == rs'.initControllerState
-    && rs.environment.nextStep.actor in rs.server_controllers
-    && rs.environment.nextStep.actor in rs'.server_controllers
+    && rs.environment.nextStep.actor in rs.controllers
+    && rs.environment.nextStep.actor in rs'.controllers
     && Node_ControllerLogEvent(
-                rs.server_controllers[rs.environment.nextStep.actor],
-                rs'.server_controllers[rs.environment.nextStep.actor],
+                rs.controllers[rs.environment.nextStep.actor],
+                rs'.controllers[rs.environment.nextStep.actor],
                 p,
                 rs.environment.nextStep.ios)
-    && rs.server_switches == rs'.server_switches
+    && rs.switches == rs'.switches
     && rs.server_logger == rs'.server_logger
-    && rs'.server_controllers == rs.server_controllers[
-        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+    && rs'.controllers == rs.controllers[
+        rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   }
 
   lemma lemma_refines_ControllerLogEvent(rs: RState, rs': RState, p: SwitchIdPair)
@@ -41,17 +41,17 @@ module Refinement_Proof_ControllerLogEvent {
 
     lemma_controllers_recved_events_valid_if_recved_events_unchanged(rs, rs');
 
-    assert refinement_switchStates(rs.server_switches)
-        == refinement_switchStates(rs'.server_switches);
+    assert refinement_switchStates(rs.switches)
+        == refinement_switchStates(rs'.switches);
 
     assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
         == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
 
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches);
+    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
 
-    assert refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
   }
 
   lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState, p: SwitchIdPair)
@@ -73,16 +73,16 @@ module Refinement_Proof_ControllerLogEvent {
       rs.environment.nextStep.ios[0].s.msg)
   {
     reveal_controllers_recved_events_valid();
-    assert p.switch in rs.server_switches;
-    assert p.event_id in rs.server_switches[p.switch].bufferedEvents;
-    assert rs.server_switches[p.switch].bufferedEvents[p.event_id] ==
-        rs.server_controllers[rs.environment.nextStep.actor].recved_events[p];
+    assert p.switch in rs.switches;
+    assert p.event_id in rs.switches[p.switch].bufferedEvents;
+    assert rs.switches[p.switch].bufferedEvents[p.event_id] ==
+        rs.controllers[rs.environment.nextStep.actor].recved_events[p];
     var entry := rs.environment.nextStep.ios[0].s.msg.log_entry;
     assert entry.LMRecv?;
     assert entry.switch == p.switch;
-    assert entry.switch in rs.server_switches;
+    assert entry.switch in rs.switches;
     assert entry.event_id == p.event_id;
-    assert entry.event_id in rs.server_switches[entry.switch].bufferedEvents;
+    assert entry.event_id in rs.switches[entry.switch].bufferedEvents;
   }
 
   lemma packet_validation_preservation(rs: RState, rs': RState, pair: SwitchIdPair)

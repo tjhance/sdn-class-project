@@ -22,8 +22,8 @@ module Refinement_Proof_LoggerBroadcast {
     && rs.environment.nextStep.actor == rs'.endpoint_logger
     && Node_LoggerBroadcast(
                 rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
-    && rs.server_controllers == rs'.server_controllers
-    && rs.server_switches == rs'.server_switches
+    && rs.controllers == rs'.controllers
+    && rs.switches == rs'.switches
   }
 
   lemma lemma_refines_LoggerBroadcast(rs: RState, rs': RState)

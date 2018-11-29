@@ -19,16 +19,16 @@ module Refinement_Proof_ControllerProcessEntry {
     && rs.environment.nextStep.LEnvStepHostIos?
     && rs.endpoint_logger == rs'.endpoint_logger
     && rs.initControllerState == rs'.initControllerState
-    && rs.environment.nextStep.actor in rs.server_controllers
-    && rs.environment.nextStep.actor in rs'.server_controllers
+    && rs.environment.nextStep.actor in rs.controllers
+    && rs.environment.nextStep.actor in rs'.controllers
     && Node_ControllerProcessEntry(
-                rs.server_controllers[rs.environment.nextStep.actor],
-                rs'.server_controllers[rs.environment.nextStep.actor],
+                rs.controllers[rs.environment.nextStep.actor],
+                rs'.controllers[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
-    && rs.server_switches == rs'.server_switches
+    && rs.switches == rs'.switches
     && rs.server_logger == rs'.server_logger
-    && rs'.server_controllers == rs.server_controllers[
-        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+    && rs'.controllers == rs.controllers[
+        rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   }
 
   lemma lemma_refines_ControllerProcessEntry(rs: RState, rs': RState)
@@ -43,17 +43,17 @@ module Refinement_Proof_ControllerProcessEntry {
 
     lemma_controllers_state_correct(rs, rs');
 
-    assert refinement_switchStates(rs.server_switches)
-        == refinement_switchStates(rs'.server_switches);
+    assert refinement_switchStates(rs.switches)
+        == refinement_switchStates(rs'.switches);
 
     assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
         == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
 
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches);
+    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
 
-    assert refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
   }
 
   lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState)
@@ -114,23 +114,23 @@ module Refinement_Proof_ControllerProcessEntry {
   lemma lemma_controllers_state_correct(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures controllers_state_correct(
-        rs'.initControllerState, rs'.server_controllers,
-        rs'.server_switches)
+        rs'.initControllerState, rs'.controllers,
+        rs'.switches)
   {
     reveal_controllers_state_correct();
 
-    forall ep | ep in rs.server_controllers
+    forall ep | ep in rs.controllers
     ensures controller_state_correct(rs'.initControllerState,
-        rs'.server_controllers[ep], rs'.server_switches)
+        rs'.controllers[ep], rs'.switches)
     {
       if (ep == rs.environment.nextStep.actor) {
         lemma_actor_state_correct(rs, rs');
         assert controller_state_correct(rs'.initControllerState,
-            rs'.server_controllers[ep], rs'.server_switches);
+            rs'.controllers[ep], rs'.switches);
       } else {
-        assert rs'.server_controllers[ep] == rs.server_controllers[ep];
+        assert rs'.controllers[ep] == rs.controllers[ep];
         assert controller_state_correct(rs'.initControllerState,
-            rs'.server_controllers[ep], rs'.server_switches);
+            rs'.controllers[ep], rs'.switches);
       }
     }
   }
@@ -139,14 +139,14 @@ module Refinement_Proof_ControllerProcessEntry {
   requires conditions(rs, rs')
   ensures controller_state_correct(
       rs'.initControllerState,
-      rs'.server_controllers[rs.environment.nextStep.actor],
-      rs'.server_switches)
+      rs'.controllers[rs.environment.nextStep.actor],
+      rs'.switches)
     lemma_controllerState_correct(rs, rs');
 
     forall xid | xid in s.buffered_commands
     ensures
       buffered_commands_correct(rs'.initControllerState, xid,
-          rs'.server_switches[
+          rs'.switches[
           .log_copy, s.buffered_commands[xid], switches)
     {
       lemma_buffered_commands_correct(rs, rs');

@@ -100,8 +100,8 @@ module Types_i {
 
       endpoint_logger: EndPoint,
       server_logger: NodeLogger,
-      server_controllers: map<EndPoint, NodeController>,
-      server_switches: map<EndPoint, NodeSwitch>,
+      controllers: map<EndPoint, NodeController>,
+      switches: map<EndPoint, NodeSwitch>,
 
       initControllerState: ControllerState
     )

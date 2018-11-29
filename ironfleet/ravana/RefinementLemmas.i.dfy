@@ -149,19 +149,19 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_switches
-  requires rs.environment.nextStep.actor in rs'.server_switches
-  requires rs.server_switches[rs.environment.nextStep.actor].received_command_ids ==
-           rs'.server_switches[rs.environment.nextStep.actor].received_command_ids
-  requires rs.server_controllers == rs'.server_controllers
+  requires rs.environment.nextStep.actor in rs.switches
+  requires rs.environment.nextStep.actor in rs'.switches
+  requires rs.switches[rs.environment.nextStep.actor].received_command_ids ==
+           rs'.switches[rs.environment.nextStep.actor].received_command_ids
+  requires rs.controllers == rs'.controllers
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+  requires rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
   ensures refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState,
-          rs.server_switches) ==
+          rs.switches) ==
           refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState,
-          rs'.server_switches)
+          rs'.switches)
   /*
   {
     var fwdOutstandingCommands := 
@@ -176,17 +176,17 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_switches
-  requires rs.environment.nextStep.actor in rs'.server_switches
-  requires rs.server_switches[rs.environment.nextStep.actor].received_command_ids ==
-           rs'.server_switches[rs.environment.nextStep.actor].received_command_ids
-  requires rs.server_controllers == rs'.server_controllers
+  requires rs.environment.nextStep.actor in rs.switches
+  requires rs.environment.nextStep.actor in rs'.switches
+  requires rs.switches[rs.environment.nextStep.actor].received_command_ids ==
+           rs'.switches[rs.environment.nextStep.actor].received_command_ids
+  requires rs.controllers == rs'.controllers
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+  requires rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
-  ensures filter_out_accepted_commands(commands, rs.server_switches)
-       == filter_out_accepted_commands(commands, rs'.server_switches)
+  ensures filter_out_accepted_commands(commands, rs.switches)
+       == filter_out_accepted_commands(commands, rs'.switches)
   {
     if (|commands| > 0) {
       lemma_filter_out_accepted_commands_eq(rs, rs', commands[0 .. |commands| - 1]);
@@ -203,17 +203,17 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_switches
-  requires rs.environment.nextStep.actor in rs'.server_switches
-  requires rs.server_switches[rs.environment.nextStep.actor].received_command_ids ==
-           rs'.server_switches[rs.environment.nextStep.actor].received_command_ids
-  requires rs.server_controllers == rs'.server_controllers
+  requires rs.environment.nextStep.actor in rs.switches
+  requires rs.environment.nextStep.actor in rs'.switches
+  requires rs.switches[rs.environment.nextStep.actor].received_command_ids ==
+           rs'.switches[rs.environment.nextStep.actor].received_command_ids
+  requires rs.controllers == rs'.controllers
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+  requires rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.server_switches, rs'.server_logger.log)
+        rs'.switches, rs'.server_logger.log)
   /*
   {
     reveal_accepted_commands_are_valid();
@@ -227,17 +227,17 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_switches
-  requires rs.environment.nextStep.actor in rs'.server_switches
-  requires rs.server_switches[rs.environment.nextStep.actor].bufferedEvents ==
-           rs'.server_switches[rs.environment.nextStep.actor].bufferedEvents
-  requires rs.server_controllers == rs'.server_controllers
+  requires rs.environment.nextStep.actor in rs.switches
+  requires rs.environment.nextStep.actor in rs'.switches
+  requires rs.switches[rs.environment.nextStep.actor].bufferedEvents ==
+           rs'.switches[rs.environment.nextStep.actor].bufferedEvents
+  requires rs.controllers == rs'.controllers
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+  requires rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
-  ensures refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
-       == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log)
+  ensures refinement_outstandingEvents(rs.switches, rs.server_logger.log)
+       == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log)
   /*
   {
     lemma_outstanding_events_set_eq(rs, rs');
@@ -251,17 +251,17 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_switches
-  requires rs.environment.nextStep.actor in rs'.server_switches
-  requires rs.server_switches[rs.environment.nextStep.actor].bufferedEvents ==
-           rs'.server_switches[rs.environment.nextStep.actor].bufferedEvents
-  requires rs.server_controllers == rs'.server_controllers
+  requires rs.environment.nextStep.actor in rs.switches
+  requires rs.environment.nextStep.actor in rs'.switches
+  requires rs.switches[rs.environment.nextStep.actor].bufferedEvents ==
+           rs'.switches[rs.environment.nextStep.actor].bufferedEvents
+  requires rs.controllers == rs'.controllers
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+  requires rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
-  ensures refinement_outstandingEventsSet(rs.server_switches, rs.server_logger.log)
-       == refinement_outstandingEventsSet(rs'.server_switches, rs'.server_logger.log)
+  ensures refinement_outstandingEventsSet(rs.switches, rs.server_logger.log)
+       == refinement_outstandingEventsSet(rs'.switches, rs'.server_logger.log)
   /*
   {
   }
@@ -275,17 +275,17 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_controllers
-  requires rs.environment.nextStep.actor in rs'.server_controllers
-  requires rs.server_controllers[rs.environment.nextStep.actor].recved_events ==
-           rs'.server_controllers[rs.environment.nextStep.actor].recved_events
-  requires rs.server_switches == rs'.server_switches
+  requires rs.environment.nextStep.actor in rs.controllers
+  requires rs.environment.nextStep.actor in rs'.controllers
+  requires rs.controllers[rs.environment.nextStep.actor].recved_events ==
+           rs'.controllers[rs.environment.nextStep.actor].recved_events
+  requires rs.switches == rs'.switches
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_controllers == rs.server_controllers[
-        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+  requires rs'.controllers == rs.controllers[
+        rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   ensures controllers_recved_events_valid(
-      rs'.server_switches,
-      rs'.server_controllers)
+      rs'.switches,
+      rs'.controllers)
   /*
   {
     reveal_controllers_recved_events_valid();
@@ -302,17 +302,17 @@ module RefinementLemmas_i {
   requires rs.environment.nextStep.LEnvStepHostIos?
   requires rs.endpoint_logger == rs'.endpoint_logger
   requires rs.initControllerState == rs'.initControllerState
-  requires rs.environment.nextStep.actor in rs.server_controllers
-  requires rs.environment.nextStep.actor in rs'.server_controllers
-  requires rs.server_controllers[rs.environment.nextStep.actor].log_copy ==
-           rs'.server_controllers[rs.environment.nextStep.actor].log_copy
-  requires rs.server_switches == rs'.server_switches
+  requires rs.environment.nextStep.actor in rs.controllers
+  requires rs.environment.nextStep.actor in rs'.controllers
+  requires rs.controllers[rs.environment.nextStep.actor].log_copy ==
+           rs'.controllers[rs.environment.nextStep.actor].log_copy
+  requires rs.switches == rs'.switches
   requires rs.server_logger == rs'.server_logger
-  requires rs'.server_controllers == rs.server_controllers[
-        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+  requires rs'.controllers == rs.controllers[
+        rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   ensures controllers_log_valid(
       rs'.server_logger.log,
-      rs'.server_controllers)
+      rs'.controllers)
   /*
   {
     reveal_controllers_log_valid();

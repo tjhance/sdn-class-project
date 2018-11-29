@@ -7,58 +7,58 @@ module Refinement_i {
 
   predicate rstate_valid(rs: RState) {
     packets_are_valid(rs)
-    && log_is_valid(rs.server_switches, rs.server_logger.log)
+    && log_is_valid(rs.switches, rs.server_logger.log)
     && accepted_commands_are_valid(rs.initControllerState,
-        rs.server_switches, rs.server_logger.log)
-    && switches_valid(rs.server_switches)
+        rs.switches, rs.server_logger.log)
+    && switches_valid(rs.switches)
 
-    && controllers_recved_events_valid(rs.server_switches, rs.server_controllers)
-    && controllers_log_valid(rs.server_logger.log, rs.server_controllers)
-    && controllers_state_correct(rs.initControllerState, rs.server_controllers,
-        rs.server_switches)
+    && controllers_recved_events_valid(rs.switches, rs.controllers)
+    && controllers_log_valid(rs.server_logger.log, rs.controllers)
+    && controllers_state_correct(rs.initControllerState, rs.controllers,
+        rs.switches)
   }
 
   function refinement(rs: RState) : ServiceState
   requires rstate_valid(rs)
   {
     ServiceState(
-      refinement_switchStates(rs.server_switches),
+      refinement_switchStates(rs.switches),
       refinement_controllerState(rs.server_logger.log, rs.initControllerState),
       refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState,
-          rs.server_switches),
-      refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
+          rs.switches),
+      refinement_outstandingEvents(rs.switches, rs.server_logger.log)
     )
   }
 
   function refinement_switchStates(
-      server_switches: map<EndPoint, NodeSwitch>) : map<EndPoint, SwitchState>
+      switches: map<EndPoint, NodeSwitch>) : map<EndPoint, SwitchState>
   {
       map switch : EndPoint
-      | switch in server_switches
-      :: server_switches[switch].switchState
+      | switch in switches
+      :: switches[switch].switchState
   }
 
   function refinement_outstandingEvents(
-      server_switches: map<EndPoint, NodeSwitch>,
+      switches: map<EndPoint, NodeSwitch>,
       log: seq<LogEntry>
       ) : multiset<SwitchEvent>
   {
-      set_to_multiset(refinement_outstandingEventsSet(server_switches, log))
+      set_to_multiset(refinement_outstandingEventsSet(switches, log))
   }
 
   function refinement_outstandingEventsSet(
-      server_switches: map<EndPoint, NodeSwitch>,
+      switches: map<EndPoint, NodeSwitch>,
       log: seq<LogEntry>
       ) : set<((EndPoint, int), SwitchEvent)>
   {
     set
         switch : EndPoint, eid : int | (
-          switch in server_switches &&
-          eid in server_switches[switch].bufferedEvents &&
+          switch in switches &&
+          eid in switches[switch].bufferedEvents &&
           (forall entry :: entry in log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
-          ((switch, eid), SwitchEvent(switch, server_switches[switch].bufferedEvents[eid]))
+          ((switch, eid), SwitchEvent(switch, switches[switch].bufferedEvents[eid]))
   }
 
   function refinement_controllerState(
@@ -69,25 +69,25 @@ module Refinement_i {
 
   function refinement_outstandingCommands(
       log: seq<LogEntry>, initControllerState: ControllerState,
-      server_switches: map<EndPoint, NodeSwitch>) : multiset<SingleCommand>
+      switches: map<EndPoint, NodeSwitch>) : multiset<SingleCommand>
   {
       var fwdOutstandingCommands := 
           controller_state_looking_forward(log, initControllerState).commands;
-      filter_out_accepted_commands(fwdOutstandingCommands, server_switches)
+      filter_out_accepted_commands(fwdOutstandingCommands, switches)
   }
 
   function filter_out_accepted_commands(
       commands: seq<SingleCommand>,
-      server_switches: map<EndPoint, NodeSwitch>) : multiset<SingleCommand>
+      switches: map<EndPoint, NodeSwitch>) : multiset<SingleCommand>
   {
     if (|commands| == 0) then (
       multiset{}
     ) else (
       var command := commands[|commands| - 1];
-      filter_out_accepted_commands(commands[0 .. |commands| - 1], server_switches) + (
+      filter_out_accepted_commands(commands[0 .. |commands| - 1], switches) + (
         if !(
-            command.switch in server_switches &&
-            (|commands| - 1) in server_switches[command.switch].received_command_ids)
+            command.switch in switches &&
+            (|commands| - 1) in switches[command.switch].received_command_ids)
         then multiset{command} else multiset{}
       )
     )
@@ -155,9 +155,9 @@ module Refinement_i {
   predicate is_valid_EventMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.EventMessage?
   {
-    src in rs.server_switches &&
-    msg.event_id in rs.server_switches[src].bufferedEvents &&
-    rs.server_switches[src].bufferedEvents[msg.event_id] == msg.event
+    src in rs.switches &&
+    msg.event_id in rs.switches[src].bufferedEvents &&
+    rs.switches[src].bufferedEvents[msg.event_id] == msg.event
   }
 
   predicate is_valid_EventAck(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
@@ -202,7 +202,7 @@ module Refinement_i {
   predicate is_valid_LogMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.LogMessage?
   {
-    is_valid_log_entry(rs.server_switches, msg.log_entry)
+    is_valid_log_entry(rs.switches, msg.log_entry)
   }
 
   predicate is_valid_log_entry(switches: map<EndPoint, NodeSwitch>, entry: LogEntry)

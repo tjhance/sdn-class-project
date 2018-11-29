@@ -19,16 +19,16 @@ module Refinement_Proof_ControllerRecvEvent {
     && rs.environment.nextStep.LEnvStepHostIos?
     && rs.endpoint_logger == rs'.endpoint_logger
     && rs.initControllerState == rs'.initControllerState
-    && rs.environment.nextStep.actor in rs.server_controllers
-    && rs.environment.nextStep.actor in rs'.server_controllers
+    && rs.environment.nextStep.actor in rs.controllers
+    && rs.environment.nextStep.actor in rs'.controllers
     && Node_ControllerRecvEvent(
-                rs.server_controllers[rs.environment.nextStep.actor],
-                rs'.server_controllers[rs.environment.nextStep.actor],
+                rs.controllers[rs.environment.nextStep.actor],
+                rs'.controllers[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
-    && rs.server_switches == rs'.server_switches
+    && rs.switches == rs'.switches
     && rs.server_logger == rs'.server_logger
-    && rs'.server_controllers == rs.server_controllers[
-        rs.environment.nextStep.actor := rs'.server_controllers[rs.environment.nextStep.actor]]
+    && rs'.controllers == rs.controllers[
+        rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   }
 
   lemma lemma_refines_ControllerRecvEvent(rs: RState, rs': RState)
@@ -41,35 +41,35 @@ module Refinement_Proof_ControllerRecvEvent {
     lemma_recved_events_valid(rs, rs');
     lemma_controllers_log_valid_if_log_copy_unchanged(rs, rs');
 
-    assert refinement_switchStates(rs.server_switches)
-        == refinement_switchStates(rs'.server_switches);
+    assert refinement_switchStates(rs.switches)
+        == refinement_switchStates(rs'.switches);
 
     assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
         == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
 
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches);
+    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
 
-    assert refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
   }
 
   lemma lemma_recved_events_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures controllers_recved_events_valid(rs'.server_switches, rs'.server_controllers)
+  ensures controllers_recved_events_valid(rs'.switches, rs'.controllers)
   {
-    forall cn | cn in rs'.server_controllers
+    forall cn | cn in rs'.controllers
     ensures 
-      forall sip :: sip in rs'.server_controllers[cn].recved_events ==>
-        sip.switch in rs'.server_switches &&
-        sip.event_id in rs'.server_switches[sip.switch].bufferedEvents &&
-        rs'.server_switches[sip.switch].bufferedEvents[sip.event_id] == rs'.server_controllers[cn].recved_events[sip]
+      forall sip :: sip in rs'.controllers[cn].recved_events ==>
+        sip.switch in rs'.switches &&
+        sip.event_id in rs'.switches[sip.switch].bufferedEvents &&
+        rs'.switches[sip.switch].bufferedEvents[sip.event_id] == rs'.controllers[cn].recved_events[sip]
     {
-      forall sip | sip in rs'.server_controllers[cn].recved_events
-      ensures sip.switch in rs'.server_switches
-      ensures sip.event_id in rs'.server_switches[sip.switch].bufferedEvents
-      ensures rs'.server_switches[sip.switch].bufferedEvents[sip.event_id]
-           == rs'.server_controllers[cn].recved_events[sip]
+      forall sip | sip in rs'.controllers[cn].recved_events
+      ensures sip.switch in rs'.switches
+      ensures sip.event_id in rs'.switches[sip.switch].bufferedEvents
+      ensures rs'.switches[sip.switch].bufferedEvents[sip.event_id]
+           == rs'.controllers[cn].recved_events[sip]
       {
         lemma_recved_event_valid(rs, rs', cn, sip);
         
@@ -80,12 +80,12 @@ module Refinement_Proof_ControllerRecvEvent {
 
   lemma lemma_recved_event_valid(rs: RState, rs': RState, cn: EndPoint, sip: SwitchIdPair)
   requires conditions(rs, rs')
-  requires cn in rs'.server_controllers
-  requires sip in rs'.server_controllers[cn].recved_events
-  ensures sip.switch in rs'.server_switches
-  ensures sip.event_id in rs'.server_switches[sip.switch].bufferedEvents
-  ensures rs'.server_switches[sip.switch].bufferedEvents[sip.event_id]
-       == rs'.server_controllers[cn].recved_events[sip]
+  requires cn in rs'.controllers
+  requires sip in rs'.controllers[cn].recved_events
+  ensures sip.switch in rs'.switches
+  ensures sip.event_id in rs'.switches[sip.switch].bufferedEvents
+  ensures rs'.switches[sip.switch].bufferedEvents[sip.event_id]
+       == rs'.controllers[cn].recved_events[sip]
   {
     if (cn == rs.environment.nextStep.actor) {
       var recv_packet := rs.environment.nextStep.ios[0].r;
@@ -93,22 +93,22 @@ module Refinement_Proof_ControllerRecvEvent {
         lemma_event_msg_is_valid(rs, rs');
         assert rs.environment.nextStep.ios[0].r.src == sip.switch;
         assert rs.environment.nextStep.ios[0].r.msg.event ==
-            rs'.server_controllers[cn].recved_events[sip];
+            rs'.controllers[cn].recved_events[sip];
         assert rs.environment.nextStep.ios[0].r.msg.event_id == sip.event_id;
       } else {
-        assert sip in rs.server_controllers[cn].recved_events;
+        assert sip in rs.controllers[cn].recved_events;
         reveal_controllers_recved_events_valid();
-        assert sip.switch in rs.server_switches;
-        assert sip.event_id in rs.server_switches[sip.switch].bufferedEvents;
-        assert rs.server_switches[sip.switch].bufferedEvents[sip.event_id]
-             == rs.server_controllers[cn].recved_events[sip];
+        assert sip.switch in rs.switches;
+        assert sip.event_id in rs.switches[sip.switch].bufferedEvents;
+        assert rs.switches[sip.switch].bufferedEvents[sip.event_id]
+             == rs.controllers[cn].recved_events[sip];
       }
     } else {
       reveal_controllers_recved_events_valid();
-      assert sip.switch in rs.server_switches;
-      assert sip.event_id in rs.server_switches[sip.switch].bufferedEvents;
-      assert rs.server_switches[sip.switch].bufferedEvents[sip.event_id]
-           == rs.server_controllers[cn].recved_events[sip];
+      assert sip.switch in rs.switches;
+      assert sip.event_id in rs.switches[sip.switch].bufferedEvents;
+      assert rs.switches[sip.switch].bufferedEvents[sip.event_id]
+           == rs.controllers[cn].recved_events[sip];
     }
   }
 

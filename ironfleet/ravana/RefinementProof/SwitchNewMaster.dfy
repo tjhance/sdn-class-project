@@ -19,16 +19,16 @@ module Refinement_Proof_SwitchNewMaster {
     && rs.environment.nextStep.LEnvStepHostIos?
     && rs.endpoint_logger == rs'.endpoint_logger
     && rs.initControllerState == rs'.initControllerState
-    && rs.environment.nextStep.actor in rs.server_switches
-    && rs.environment.nextStep.actor in rs'.server_switches
+    && rs.environment.nextStep.actor in rs.switches
+    && rs.environment.nextStep.actor in rs'.switches
     && Node_SwitchNewMaster(
-                rs.server_switches[rs.environment.nextStep.actor],
-                rs'.server_switches[rs.environment.nextStep.actor],
+                rs.switches[rs.environment.nextStep.actor],
+                rs'.switches[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
-    && rs.server_controllers == rs'.server_controllers
+    && rs.controllers == rs'.controllers
     && rs.server_logger == rs'.server_logger
-    && rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+    && rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
 
   lemma lemma_refines_SwitchNewMaster(rs: RState, rs': RState)
@@ -42,19 +42,19 @@ module Refinement_Proof_SwitchNewMaster {
     lemma_accepted_commands_are_valid(rs, rs');
     lemma_switches_valid(rs, rs');
 
-    assert refinement_switchStates(rs.server_switches)
-        == refinement_switchStates(rs'.server_switches);
+    assert refinement_switchStates(rs.switches)
+        == refinement_switchStates(rs'.switches);
 
     assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
         == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
 
     lemma_outstanding_commands_eq(rs, rs');
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches);
+    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
 
     lemma_outstanding_events_eq(rs, rs');
-    assert refinement_outstandingEvents(rs.server_switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.server_switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
 
   }
 
@@ -111,7 +111,7 @@ module Refinement_Proof_SwitchNewMaster {
 
   lemma lemma_log_is_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures log_is_valid(rs'.server_switches, rs'.server_logger.log)
+  ensures log_is_valid(rs'.switches, rs'.server_logger.log)
   {
     reveal_log_is_valid();
   }
@@ -119,14 +119,14 @@ module Refinement_Proof_SwitchNewMaster {
   lemma lemma_accepted_commands_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.server_switches, rs'.server_logger.log)
+        rs'.switches, rs'.server_logger.log)
   {
     reveal_accepted_commands_are_valid();
   }
 
   lemma lemma_switches_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures switches_valid(rs'.server_switches)
+  ensures switches_valid(rs'.switches)
   {
     reveal_switches_valid();
   }

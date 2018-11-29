@@ -19,16 +19,16 @@ module Refinement_Proof_SwitchRecvCommand {
     && rs.environment.nextStep.LEnvStepHostIos?
     && rs.endpoint_logger == rs'.endpoint_logger
     && rs.initControllerState == rs'.initControllerState
-    && rs.environment.nextStep.actor in rs.server_switches
-    && rs.environment.nextStep.actor in rs'.server_switches
+    && rs.environment.nextStep.actor in rs.switches
+    && rs.environment.nextStep.actor in rs'.switches
     && Node_SwitchRecvCommand(
-                rs.server_switches[rs.environment.nextStep.actor],
-                rs'.server_switches[rs.environment.nextStep.actor],
+                rs.switches[rs.environment.nextStep.actor],
+                rs'.switches[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
-    && rs.server_controllers == rs'.server_controllers
+    && rs.controllers == rs'.controllers
     && rs.server_logger == rs'.server_logger
-    && rs'.server_switches == rs.server_switches[
-        rs.environment.nextStep.actor := rs'.server_switches[rs.environment.nextStep.actor]]
+    && rs'.switches == rs.switches[
+        rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
 
   lemma lemma_refines_SwitchEventSend(rs: RState, rs': RState)
@@ -107,7 +107,7 @@ module Refinement_Proof_SwitchRecvCommand {
 
   lemma {:axiom} lemma_log_is_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures log_is_valid(rs'.server_switches, rs'.server_logger.log)
+  ensures log_is_valid(rs'.switches, rs'.server_logger.log)
   /*
   {
     reveal_log_is_valid();
@@ -117,7 +117,7 @@ module Refinement_Proof_SwitchRecvCommand {
   lemma {:axiom} lemma_accepted_commands_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.server_switches, rs'.server_logger.log)
+        rs'.switches, rs'.server_logger.log)
   /*
   {
     reveal_accepted_commands_are_valid();
@@ -125,14 +125,14 @@ module Refinement_Proof_SwitchRecvCommand {
     var all_commands := controller_state_looking_forward(
                 rs'.server_logger.log, rs'.initControllerState).commands;
 
-    var s := rs.server_switches[rs.environment.nextStep.actor];
+    var s := rs.switches[rs.environment.nextStep.actor];
 
-    forall ep | ep in rs'.server_switches
-      ensures forall command_id :: command_id in rs'.server_switches[ep].received_command_ids ==>
+    forall ep | ep in rs'.switches
+      ensures forall command_id :: command_id in rs'.switches[ep].received_command_ids ==>
         0 <= command_id < |all_commands| &&
         all_commands[command_id].switch == ep
     {
-      forall command_id | command_id in rs'.server_switches[ep].received_command_ids
+      forall command_id | command_id in rs'.switches[ep].received_command_ids
       ensures 0 <= command_id < |all_commands|
       ensures all_commands[command_id].switch == ep
       {
@@ -171,7 +171,7 @@ module Refinement_Proof_SwitchRecvCommand {
 
   lemma {:axiom} lemma_switches_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures switches_valid(rs'.server_switches)
+  ensures switches_valid(rs'.switches)
   /*
   {
     reveal_switches_valid();
@@ -201,8 +201,8 @@ module Refinement_Proof_SwitchRecvCommand {
   requires rstate_valid(rs')
   requires sc == SingleCommand(rs.environment.nextStep.actor,
                                rs.environment.nextStep.ios[0].r.msg.command)
-  ensures refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
-       == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches) + multiset{sc}
+  ensures refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
+       == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches) + multiset{sc}
        /* 
   {
     lemma_incoming_command_matches_log(rs, rs', sc,
@@ -211,13 +211,13 @@ module Refinement_Proof_SwitchRecvCommand {
               rs.environment.nextStep.ios[0].r.msg.command_id,
               controller_state_looking_forward(
                 rs'.server_logger.log, rs'.initControllerState).commands);
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.server_switches)
+    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
         == filter_out_accepted_commands(controller_state_looking_forward(
-              rs.server_logger.log, rs.initControllerState).commands, rs.server_switches)
+              rs.server_logger.log, rs.initControllerState).commands, rs.switches)
         == filter_out_accepted_commands(controller_state_looking_forward(
-              rs'.server_logger.log, rs'.initControllerState).commands, rs'.server_switches)
+              rs'.server_logger.log, rs'.initControllerState).commands, rs'.switches)
             + multiset{sc}
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.server_switches)
+        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches)
             + multiset{sc};
   }
   */
@@ -228,12 +228,12 @@ module Refinement_Proof_SwitchRecvCommand {
   requires rstate_valid(rs')
   requires 0 <= idx < |comms|
   requires comms[idx] == sc
-  requires sc.switch in rs.server_switches
-  requires !(idx in rs.server_switches[sc.switch].received_command_ids)
-  requires rs'.server_switches[sc.switch].received_command_ids ==
-             rs.server_switches[sc.switch].received_command_ids + [idx]
-  ensures  filter_out_accepted_commands(comms, rs.server_switches)
-        == filter_out_accepted_commands(comms, rs'.server_switches)
+  requires sc.switch in rs.switches
+  requires !(idx in rs.switches[sc.switch].received_command_ids)
+  requires rs'.switches[sc.switch].received_command_ids ==
+             rs.switches[sc.switch].received_command_ids + [idx]
+  ensures  filter_out_accepted_commands(comms, rs.switches)
+        == filter_out_accepted_commands(comms, rs'.switches)
             + multiset{sc}
   /*
   {
@@ -251,12 +251,12 @@ module Refinement_Proof_SwitchRecvCommand {
   requires conditions(rs, rs')
   requires rstate_valid(rs')
   requires |comms| <= idx
-  requires sc.switch in rs.server_switches
-  requires !(idx in rs.server_switches[sc.switch].received_command_ids)
-  requires rs'.server_switches[sc.switch].received_command_ids ==
-             rs.server_switches[sc.switch].received_command_ids + [idx]
-  ensures  filter_out_accepted_commands(comms, rs.server_switches)
-        == filter_out_accepted_commands(comms, rs'.server_switches)
+  requires sc.switch in rs.switches
+  requires !(idx in rs.switches[sc.switch].received_command_ids)
+  requires rs'.switches[sc.switch].received_command_ids ==
+             rs.switches[sc.switch].received_command_ids + [idx]
+  ensures  filter_out_accepted_commands(comms, rs.switches)
+        == filter_out_accepted_commands(comms, rs'.switches)
   /*
   {
     if (|comms| == 0) {
