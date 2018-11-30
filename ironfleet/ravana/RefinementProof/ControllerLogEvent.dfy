@@ -40,6 +40,8 @@ module Refinement_Proof_ControllerLogEvent {
     lemma_packets_are_valid(rs, rs', p);
 
     lemma_controllers_recved_events_valid_if_recved_events_unchanged(rs, rs');
+    lemma_controllers_log_valid_if_log_copy_unchanged(rs, rs');
+    lemma_controllers_state_correct_if_controller_stuff_unchanged(rs, rs');
 
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
@@ -54,16 +56,14 @@ module Refinement_Proof_ControllerLogEvent {
         == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
-  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState, p: SwitchIdPair)
+  lemma lemma_packets_are_valid(rs: RState, rs': RState, p: SwitchIdPair)
   requires conditions(rs, rs', p)
   ensures packets_are_valid(rs')
-  /*
   {
     lemma_new_packet_valid(rs, rs', p);
     packet_validation_preservation(rs, rs', p);
     lemma_packets_are_valid_sending_1(rs, rs');
   }
-  */
 
   lemma lemma_new_packet_valid(rs: RState, rs': RState, p: SwitchIdPair)
   requires conditions(rs, rs', p)
