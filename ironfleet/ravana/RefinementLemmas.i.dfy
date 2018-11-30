@@ -356,6 +356,54 @@ module RefinementLemmas_i {
       rs'.switches)
   /*
   {
+    lemma_controllers_state_correct_if_controller_stuff_unchanged1(rs, rs');
+  }
+  */
+
+  lemma
+  {:axiom}
+  lemma_controllers_state_correct_if_controller_stuff_unchanged1(
+      rs: RState, rs': RState)
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor in rs.controllers
+  requires rs.environment.nextStep.actor in rs'.controllers
+
+  requires is_prefix(
+              rs.controllers[rs.environment.nextStep.actor].log_copy,
+              rs'.controllers[rs.environment.nextStep.actor].log_copy
+            )
+  requires (forall xid ::
+     xid in rs'.controllers[rs.environment.nextStep.actor].buffered_commands ==>
+     xid in rs.controllers[rs.environment.nextStep.actor].buffered_commands &&
+     forall command_id ::
+     command_id in rs'.controllers[rs.environment.nextStep.actor].buffered_commands[xid] ==>
+     command_id in rs.controllers[rs.environment.nextStep.actor].buffered_commands[xid] &&
+     rs'.controllers[rs.environment.nextStep.actor].buffered_commands[xid][command_id] ==
+     rs.controllers[rs.environment.nextStep.actor].buffered_commands[xid][command_id]
+     )
+
+  requires rs.controllers[rs.environment.nextStep.actor].idx ==
+           rs'.controllers[rs.environment.nextStep.actor].idx
+  requires rs.controllers[rs.environment.nextStep.actor].current_command_id ==
+           rs'.controllers[rs.environment.nextStep.actor].current_command_id
+  requires rs.controllers[rs.environment.nextStep.actor].controllerState ==
+           rs'.controllers[rs.environment.nextStep.actor].controllerState
+
+  requires rs.switches == rs'.switches
+  requires rs.logger == rs'.logger
+  requires rs'.controllers == rs.controllers[
+        rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
+  ensures controllers_state_correct(
+      rs'.initControllerState,
+      rs'.controllers,
+      rs'.switches)
+  /*
+  {
     reveal_controllers_state_correct();
 
     forall ep | ep in rs'.controllers
@@ -394,7 +442,7 @@ module RefinementLemmas_i {
   }
   */
 
-  lemma lemma_prefix_of_log_gives_prefix_of_commands(
+  lemma {:axiom} lemma_prefix_of_log_gives_prefix_of_commands(
       log1: seq<LogEntry>,
       log2: seq<LogEntry>,
       init: ControllerState)
@@ -403,6 +451,7 @@ module RefinementLemmas_i {
       controller_state_looking_forward(log1, init).commands,
       controller_state_looking_forward(log2, init).commands
     )
+  /*
   {
     if (|log1| == |log2|) {
       assert log1 == log2;
@@ -412,4 +461,5 @@ module RefinementLemmas_i {
       lemma_prefix_of_log_gives_prefix_of_commands(log1, log2[0 .. |log2| - 1], init);
     }
   }
+  */
 }
