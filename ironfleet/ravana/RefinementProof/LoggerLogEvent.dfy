@@ -4,7 +4,7 @@ include "../Service.i.dfy"
 include "../DistributedSystem.i.dfy"
 include "../RefinementLemmas.i.dfy"
 
-module Refinement_Proof_LogEvent {
+module Refinement_Proof_LoggerLogEvent {
   import opened Types_i
   import opened Refinement_i
   import opened Service_i

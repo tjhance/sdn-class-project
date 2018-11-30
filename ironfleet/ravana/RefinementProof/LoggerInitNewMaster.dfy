@@ -4,7 +4,7 @@ include "../Service.i.dfy"
 include "../DistributedSystem.i.dfy"
 include "../RefinementLemmas.i.dfy"
 
-module Refinement_Proof_InitNewMasterMsg {
+module Refinement_Proof_LoggerInitNewMaster {
   import opened Types_i
   import opened Refinement_i
   import opened Service_i
@@ -20,30 +20,41 @@ module Refinement_Proof_InitNewMasterMsg {
     && rs.endpoint_logger == rs'.endpoint_logger
     && rs.initControllerState == rs'.initControllerState
     && rs.environment.nextStep.actor == rs'.endpoint_logger
-    && Node_LoggerInitNewMasterMsg(
+    && Node_LoggerInitNewMaster(
                 rs.logger, rs'.logger, rs.environment.nextStep.ios)
     && rs.controllers == rs'.controllers
     && rs.switches == rs'.switches
   }
- 
-  lemma lemma_refines_Logger_InitNewMasterMsg(rs: RState, rs': RState)
+
+  lemma lemma_refines_LoggerInitNewMaster(rs: RState, rs': RState)
   requires conditions(rs, rs')
 
   ensures rstate_valid(rs')
   ensures refinement(rs) == refinement(rs')
   {
-    lemma_packets_are_valid(rs, rs');  
+    lemma_packets_are_valid(rs, rs');
+
+    assert refinement_switchStates(rs.switches)
+        == refinement_switchStates(rs'.switches);
+
+    assert rs.logger.log == rs'.logger.log;
+
+    assert refinement_controllerState(rs.logger.log, rs.initControllerState)
+        == refinement_controllerState(rs'.logger.log, rs'.initControllerState);
+
+    assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches);
+
+    assert refinement_outstandingEvents(rs.switches, rs.logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
   lemma lemma_packets_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures packets_are_valid(rs')
   {
-    var packet := rs.environment.nextStep.ios[0].s;
-    assert is_valid_message(rs', packet.src, packet.dst, packet.msg);
-
     packet_validation_preservation(rs, rs');
-    lemma_packets_are_valid_sending_1(rs, rs');
+    lemma_packets_are_valid_no_sending(rs, rs');
   }
 
   lemma packet_validation_preservation(rs: RState, rs': RState)

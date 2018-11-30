@@ -4,7 +4,7 @@ include "../Service.i.dfy"
 include "../DistributedSystem.i.dfy"
 include "../RefinementLemmas.i.dfy"
 
-module Refinement_Proof_InitNewMaster {
+module Refinement_Proof_SwitchEvent {
   import opened Types_i
   import opened Refinement_i
   import opened Service_i
@@ -32,7 +32,7 @@ module Refinement_Proof_InitNewMaster {
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
 
-  lemma lemma_refines_Logger_InitNewMaster(rs: RState, rs': RState, event: Event)
+  lemma lemma_refines_Logger_SwitchEvent(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
 
   ensures rstate_valid(rs')
