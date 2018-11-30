@@ -111,11 +111,12 @@ module Refinement_Proof_ControllerProcessEntry {
   }
   */
 
-  lemma lemma_controllers_state_correct(rs: RState, rs': RState)
+  lemma {:axiom} lemma_controllers_state_correct(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures controllers_state_correct(
         rs'.initControllerState, rs'.controllers,
         rs'.switches)
+  /*
   {
     reveal_controllers_state_correct();
 
@@ -134,23 +135,179 @@ module Refinement_Proof_ControllerProcessEntry {
       }
     }
   }
+  */
 
   lemma lemma_actor_state_correct(rs: RState, rs': RState)
   requires conditions(rs, rs')
+  requires controller_state_correct(
+      rs.initControllerState,
+      rs.controllers[rs.environment.nextStep.actor],
+      rs.switches)
   ensures controller_state_correct(
       rs'.initControllerState,
       rs'.controllers[rs.environment.nextStep.actor],
       rs'.switches)
-    lemma_controllerState_correct(rs, rs');
+  {
+    var s' := rs'.controllers[rs.environment.nextStep.actor];
 
-    forall xid | xid in s.buffered_commands
+    lemma_controllerState_correct(rs, rs', s');
+
+    forall xid | xid in s'.buffered_commands
     ensures
       buffered_commands_correct(rs'.initControllerState, xid,
-          rs'.switches[
-          .log_copy, s.buffered_commands[xid], switches)
+          s'.log_copy,
+          s'.buffered_commands[xid],
+          rs'.switches);
     {
-      lemma_buffered_commands_correct(rs, rs');
+      lemma_buffered_commands_correct(rs, rs', xid, s');
     }
-  {
   }
+
+  lemma lemma_controllerState_correct(rs: RState, rs': RState, s': NodeController)
+  requires conditions(rs, rs')
+  requires s' == rs'.controllers[rs.environment.nextStep.actor]
+  requires controller_state_correct(
+      rs.initControllerState,
+      rs.controllers[rs.environment.nextStep.actor],
+      rs.switches)
+  ensures s'.controllerState ==
+        controller_state_looking_forward(
+          s'.log_copy[0 .. s'.idx], rs'.initControllerState).controllerState
+  ensures s'.current_command_id ==
+        |controller_state_looking_forward(s'.log_copy[0 .. s'.idx],
+        rs'.initControllerState).commands|
+  {
+    var s := rs.controllers[rs.environment.nextStep.actor];
+    var l := s.log_copy[s.idx];
+
+    assert s'.idx == s.idx + 1;
+    assert s'.idx >= 1;
+    var s'_prefix := s'.log_copy[0 .. s'.idx];
+    assert s'_prefix[0 .. |s'_prefix| - 1]
+        == s'.log_copy[0 .. s'.idx][0 .. |s'.log_copy[0 .. s'.idx]| - 1]
+        == s'.log_copy[0 .. |s'.log_copy[0 .. s'.idx]| - 1]
+        == s'.log_copy[0 .. s'.idx - 1]
+        == s.log_copy[0 .. s'.idx - 1]
+        == s.log_copy[0 .. s.idx];
+
+    assert s.controllerState
+        == controller_state_looking_forward(
+              s.log_copy[0 .. s.idx], rs'.initControllerState).controllerState
+        == controller_state_looking_forward(
+              s'_prefix[0 .. |s'_prefix| - 1], rs'.initControllerState).controllerState;
+
+    if (l.LMRecv?) {
+      if (s.leader) {
+        assert s'.controllerState ==
+              controller_state_looking_forward(
+                s'.log_copy[0 .. s'.idx], rs'.initControllerState).controllerState;
+      } else {
+        assert s'.controllerState ==
+              controller_state_looking_forward(
+                s'.log_copy[0 .. s'.idx], rs'.initControllerState).controllerState;
+      }
+    } else {
+      if (s.leader) {
+        assert s'.controllerState ==
+              controller_state_looking_forward(
+                s'.log_copy[0 .. s'.idx], rs'.initControllerState).controllerState;
+      } else {
+        assert s'.controllerState ==
+              controller_state_looking_forward(
+                s'.log_copy[0 .. s'.idx], rs'.initControllerState).controllerState;
+      }
+    }
+  }
+
+  lemma {:axiom}
+    lemma_buffered_commands_correct(rs: RState, rs': RState, xid: int, s': NodeController)
+  requires conditions(rs, rs')
+  requires s' == rs'.controllers[rs.environment.nextStep.actor]
+  requires xid in s'.buffered_commands
+  requires controller_state_correct(
+      rs.initControllerState,
+      rs.controllers[rs.environment.nextStep.actor],
+      rs.switches)
+  ensures buffered_commands_correct(rs'.initControllerState, xid,
+          s'.log_copy,
+          s'.buffered_commands[xid],
+          rs'.switches);
+  /*
+  {
+    var s := rs.controllers[rs.environment.nextStep.actor];
+    var comms := s'.buffered_commands[xid];
+    var command_id_base :=
+        |controller_state_looking_forward(s'.log_copy[0 .. xid], rs'.initControllerState).commands|;
+    var commands := controllerTransition(
+      controller_state_looking_forward(s'.log_copy[0 .. xid], rs'.initControllerState).controllerState,
+      s'.log_copy[xid].switch,
+      s'.log_copy[xid].event).1;
+
+    if (xid == s.idx) {
+      lemma_all_commands_in_new_map_good(rs, rs', xid, s, s', comms,
+          command_id_base, commands);
+    } else {
+      assert s'.buffered_commands[xid] == s.buffered_commands[xid];
+      assert xid in s.buffered_commands;
+      assert buffered_commands_correct(rs.initControllerState, xid,
+              s.log_copy,
+              s.buffered_commands[xid],
+              rs.switches);
+      assert buffered_commands_correct(rs'.initControllerState, xid,
+              s'.log_copy,
+              s'.buffered_commands[xid],
+              rs'.switches);
+    }
+  }
+  */
+
+  lemma {:axiom} lemma_all_commands_in_new_map_good(rs: RState, rs': RState,
+      xid: int, s: NodeController, s': NodeController, comms: map<int, SingleCommand>,
+      command_id_base: int, commands: seq<SingleCommand>)
+  requires conditions(rs, rs')
+  requires s == rs.controllers[rs.environment.nextStep.actor]
+  requires s' == rs'.controllers[rs.environment.nextStep.actor]
+  requires xid in s'.buffered_commands
+  requires controller_state_correct(
+      rs.initControllerState,
+      rs.controllers[rs.environment.nextStep.actor],
+      rs.switches)
+
+  requires comms == s'.buffered_commands[xid]
+  requires command_id_base ==
+        |controller_state_looking_forward(s'.log_copy[0 .. xid], rs'.initControllerState).commands|
+
+  requires commands == controllerTransition(
+      controller_state_looking_forward(s'.log_copy[0 .. xid], rs'.initControllerState).controllerState,
+      s'.log_copy[xid].switch,
+      s'.log_copy[xid].event).1
+  requires xid == s.idx
+
+  ensures all_commands_in_map_good(comms, commands, command_id_base)
+  /*
+  {
+    var l := s.log_copy[s.idx];
+    if (l.LMRecv?) {
+      if (s.leader) {
+        forall command_id | command_id in comms
+        ensures command_id_base <= command_id < command_id_base + |commands|
+        ensures commands[command_id - command_id_base] == comms[command_id]
+        {
+          assert command_id in 
+            (map i : int
+                  | s.current_command_id <= i < s.current_command_id + |commands|
+                 :: commands[i - s.current_command_id]
+            );
+          assert s.current_command_id <= command_id < s.current_command_id + |commands|;
+          assert command_id_base == s.current_command_id;
+        }
+        assert all_commands_in_map_good(comms, commands, command_id_base);
+      } else {
+        assert s'.buffered_commands[xid] == s.buffered_commands[xid];
+      }
+    } else {
+      assert s'.buffered_commands[xid] == s.buffered_commands[xid];
+    }
+  }
+  */
 }

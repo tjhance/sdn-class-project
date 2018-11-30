@@ -280,6 +280,8 @@ module Refinement_i {
     0 <= s.idx <= |s.log_copy|
     && s.controllerState ==
         controller_state_looking_forward(s.log_copy[0 .. s.idx], init).controllerState
+    && s.current_command_id ==
+        |controller_state_looking_forward(s.log_copy[0 .. s.idx], init).commands|
     && (forall xid :: xid in s.buffered_commands ==>
         buffered_commands_correct(init, xid, s.log_copy, s.buffered_commands[xid], switches)
        )

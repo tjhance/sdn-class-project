@@ -189,7 +189,7 @@ module Protocol_Node_i {
           !(xid in new_map) &&
           (xid in old_map) &&
           old_map == new_map[xid := old_map[xid]] &&
-          s' == s.(buffered_commands := new_map)
+          s' == s.(buffered_commands := new_map).(idx := s.idx + 1)
         ) || (
           !s.leader &&
           s' == s.(idx := s.idx + 1)
