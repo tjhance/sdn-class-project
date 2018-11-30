@@ -41,6 +41,9 @@ module Refinement_Proof_ControllerReadLog {
     lemma_controllers_recved_events_valid_if_recved_events_unchanged(rs, rs');
     lemma_controllers_log_valid(rs, rs');
 
+    lemma_is_prefix(rs, rs');
+    lemma_controllers_state_correct_if_controller_stuff_unchanged(rs, rs');
+
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
 
@@ -52,6 +55,36 @@ module Refinement_Proof_ControllerReadLog {
 
     assert refinement_outstandingEvents(rs.switches, rs.logger.log)
         == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
+  }
+
+  lemma lemma_is_prefix(rs: RState, rs': RState)
+  requires conditions(rs, rs')
+  ensures is_prefix(
+            rs.controllers[rs.environment.nextStep.actor].log_copy,
+            rs'.controllers[rs.environment.nextStep.actor].log_copy
+          )
+  {
+    var full := rs.logger.log;
+    var s := rs.controllers[rs.environment.nextStep.actor];
+    var s' := rs'.controllers[rs.environment.nextStep.actor];
+    var log := s.log_copy;
+    var log' := s'.log_copy;
+    var msglog := rs.environment.nextStep.ios[0].r.msg.full_log;
+
+    reveal_packets_are_valid();
+    assert is_prefix(msglog, full);
+
+    reveal_controllers_log_valid();
+    assert controller_log_valid(full, s);
+
+    assert |log| <= |full|;
+    assert |log'| <= |full|;
+    assert log == full[0 .. |log|];
+    assert log' == full[0 .. |log'|];
+    assert is_prefix(log, full);
+    assert |log| <= |log'|;
+
+    assert log == log'[0 .. |log|];
   }
 
   lemma lemma_controllers_log_valid(rs: RState, rs': RState)

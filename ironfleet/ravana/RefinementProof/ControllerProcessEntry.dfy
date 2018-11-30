@@ -56,20 +56,17 @@ module Refinement_Proof_ControllerProcessEntry {
         == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
-  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState)
+  lemma lemma_packets_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures packets_are_valid(rs')
-  /*
   {
     packet_validation_preservation(rs, rs');
     lemma_packets_are_valid_no_sending(rs, rs');
   }
-  */
 
-  lemma {:axiom} packet_validation_preservation(rs: RState, rs': RState)
+  lemma packet_validation_preservation(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures packet_validation_preserved(rs, rs')
-  /*
   {
     forall p : LPacket<EndPoint, RavanaMessage>
     ensures 
@@ -109,14 +106,12 @@ module Refinement_Proof_ControllerProcessEntry {
     }
     reveal_packet_validation_preserved();
   }
-  */
 
-  lemma {:axiom} lemma_controllers_state_correct(rs: RState, rs': RState)
+  lemma lemma_controllers_state_correct(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures controllers_state_correct(
         rs'.initControllerState, rs'.controllers,
         rs'.switches)
-  /*
   {
     reveal_controllers_state_correct();
 
@@ -135,7 +130,6 @@ module Refinement_Proof_ControllerProcessEntry {
       }
     }
   }
-  */
 
   lemma lemma_actor_state_correct(rs: RState, rs': RState)
   requires conditions(rs, rs')
@@ -219,7 +213,7 @@ module Refinement_Proof_ControllerProcessEntry {
     }
   }
 
-  lemma {:axiom}
+  lemma
     lemma_buffered_commands_correct(rs: RState, rs': RState, xid: int, s': NodeController)
   requires conditions(rs, rs')
   requires s' == rs'.controllers[rs.environment.nextStep.actor]
@@ -232,7 +226,6 @@ module Refinement_Proof_ControllerProcessEntry {
           s'.log_copy,
           s'.buffered_commands[xid],
           rs'.switches);
-  /*
   {
     var s := rs.controllers[rs.environment.nextStep.actor];
     var comms := s'.buffered_commands[xid];
@@ -259,9 +252,8 @@ module Refinement_Proof_ControllerProcessEntry {
               rs'.switches);
     }
   }
-  */
 
-  lemma {:axiom} lemma_all_commands_in_new_map_good(rs: RState, rs': RState,
+  lemma lemma_all_commands_in_new_map_good(rs: RState, rs': RState,
       xid: int, s: NodeController, s': NodeController, comms: map<int, SingleCommand>,
       command_id_base: int, commands: seq<SingleCommand>)
   requires conditions(rs, rs')
@@ -284,7 +276,6 @@ module Refinement_Proof_ControllerProcessEntry {
   requires xid == s.idx
 
   ensures all_commands_in_map_good(comms, commands, command_id_base)
-  /*
   {
     var l := s.log_copy[s.idx];
     if (l.LMRecv?) {
@@ -309,5 +300,4 @@ module Refinement_Proof_ControllerProcessEntry {
       assert s'.buffered_commands[xid] == s.buffered_commands[xid];
     }
   }
-  */
 }
