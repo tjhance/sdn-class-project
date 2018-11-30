@@ -20,7 +20,7 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
 
@@ -69,16 +69,16 @@ module Refinement_Proof_LogEvent {
       assert refinement_switchStates(rs.switches)
           == refinement_switchStates(rs'.switches);
 
-      assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
-          == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
+      assert refinement_controllerState(rs.logger.log, rs.initControllerState)
+          == refinement_controllerState(rs'.logger.log, rs'.initControllerState);
 
-      assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
-          == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
+      assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+          == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches);
 
       lemma_lmproc_outstandingEventsSet_matches(rs, rs', log_entry);
 
-      assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
-          == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
+      assert refinement_outstandingEvents(rs.switches, rs.logger.log)
+          == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
 
       assert s == s';
     }
@@ -94,10 +94,10 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
-  ensures log_is_valid(rs'.switches, rs'.server_logger.log)
+  ensures log_is_valid(rs'.switches, rs'.logger.log)
   {
     reveal_log_is_valid();
 
@@ -105,16 +105,16 @@ module Refinement_Proof_LogEvent {
     assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
     lemma_received_packet_is_valid(rs, rs', rs.environment.nextStep.ios[0].r);
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
-    assert rs.server_logger.log + [log_entry] == rs'.server_logger.log;
+    assert rs.logger.log + [log_entry] == rs'.logger.log;
 
     assert is_valid_log_entry(rs.switches, log_entry);
-    assert forall entry :: entry in rs.server_logger.log ==>
+    assert forall entry :: entry in rs.logger.log ==>
         is_valid_log_entry(rs.switches, entry);
-    assert forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+    assert forall entry :: entry in (rs.logger.log + [log_entry]) ==>
         is_valid_log_entry(rs.switches, entry);
-    assert forall entry :: entry in rs'.server_logger.log ==>
+    assert forall entry :: entry in rs'.logger.log ==>
         is_valid_log_entry(rs.switches, entry);
-    assert forall entry :: entry in rs'.server_logger.log ==>
+    assert forall entry :: entry in rs'.logger.log ==>
         is_valid_log_entry(rs'.switches, entry);
   }
 
@@ -128,19 +128,19 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.switches, rs'.server_logger.log)
+        rs'.switches, rs'.logger.log)
   /*
   {
     reveal_accepted_commands_are_valid();
 
     var all_commands := controller_state_looking_forward(
-                rs.server_logger.log, rs.initControllerState).commands;
+                rs.logger.log, rs.initControllerState).commands;
     var all_commands' := controller_state_looking_forward(
-                rs'.server_logger.log, rs'.initControllerState).commands;
+                rs'.logger.log, rs'.initControllerState).commands;
 
     all_commands_grows(rs, rs', all_commands, all_commands');
   }
@@ -157,14 +157,14 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
 
   requires commands == controller_state_looking_forward(
-                rs.server_logger.log, rs.initControllerState).commands
+                rs.logger.log, rs.initControllerState).commands
   requires commands' == controller_state_looking_forward(
-                rs'.server_logger.log, rs'.initControllerState).commands
+                rs'.logger.log, rs'.initControllerState).commands
 
   ensures |commands| <= |commands'|
   ensures commands == commands'[0 .. |commands| ]
@@ -174,11 +174,11 @@ module Refinement_Proof_LogEvent {
     assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
     lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
-    assert rs.server_logger.log + [log_entry] == rs'.server_logger.log;
+    assert rs.logger.log + [log_entry] == rs'.logger.log;
     
     if (log_entry.LMProc?) {
     } else {
-      var sac1 := controller_state_looking_forward(rs.server_logger.log, rs.initControllerState);
+      var sac1 := controller_state_looking_forward(rs.logger.log, rs.initControllerState);
       var commands'' := controllerTransition(sac1.controllerState,
           log_entry.switch, log_entry.event).1;
 
@@ -191,36 +191,36 @@ module Refinement_Proof_LogEvent {
   lemma {:axiom}
   lemma_lmproc_outstandingEventsSet_matches(rs: RState, rs': RState, log_entry: LogEntry)
   requires rs'.switches == rs.switches
-  requires rs'.server_logger.log == rs.server_logger.log + [log_entry]
+  requires rs'.logger.log == rs.logger.log + [log_entry]
   requires log_entry.LMProc?
-  ensures refinement_outstandingEventsSet(rs.switches, rs.server_logger.log)
-       == refinement_outstandingEventsSet(rs'.switches, rs'.server_logger.log)
+  ensures refinement_outstandingEventsSet(rs.switches, rs.logger.log)
+       == refinement_outstandingEventsSet(rs'.switches, rs'.logger.log)
   /*
   {
     forall switch | switch in rs.switches
     ensures forall eid :: eid in rs.switches[switch].bufferedEvents ==> (
-         (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+         (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
             !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
-         == (forall entry :: entry in (rs.server_logger.log) ==>
+         == (forall entry :: entry in (rs.logger.log) ==>
             !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
        )
     {
       forall eid | eid in rs.switches[switch].bufferedEvents
-      ensures (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+      ensures (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
             !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
-         == (forall entry :: entry in (rs.server_logger.log) ==>
+         == (forall entry :: entry in (rs.logger.log) ==>
             !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
       {
       }
     }
 
-    assert refinement_outstandingEventsSet(rs'.switches, rs'.server_logger.log)
+    assert refinement_outstandingEventsSet(rs'.switches, rs'.logger.log)
         == (
           set
             switch : EndPoint, eid : int | (
               switch in rs'.switches &&
               eid in rs'.switches[switch].bufferedEvents &&
-              (forall entry :: entry in rs'.server_logger.log ==>
+              (forall entry :: entry in rs'.logger.log ==>
                   !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
             ) ::
               ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
@@ -230,7 +230,7 @@ module Refinement_Proof_LogEvent {
             switch : EndPoint, eid : int | (
               switch in rs.switches &&
               eid in rs.switches[switch].bufferedEvents &&
-              (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+              (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
                   !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
             ) ::
               ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -240,12 +240,12 @@ module Refinement_Proof_LogEvent {
             switch : EndPoint, eid : int | (
               switch in rs.switches &&
               eid in rs.switches[switch].bufferedEvents &&
-              (forall entry :: entry in (rs.server_logger.log) ==>
+              (forall entry :: entry in (rs.logger.log) ==>
                   !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
             ) ::
               ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
           )
-        == refinement_outstandingEventsSet(rs'.switches, rs'.server_logger.log);
+        == refinement_outstandingEventsSet(rs'.switches, rs'.logger.log);
   }
   */
 
@@ -261,7 +261,7 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
 
@@ -277,53 +277,53 @@ module Refinement_Proof_LogEvent {
   {
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
 
-    assert controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).controllerState
+    assert controller_state_looking_forward(rs.logger.log, rs.initControllerState).controllerState
         == refinement(rs).controllerState;
 
     assert singleCommands ==
           controllerTransition(
-              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).controllerState,
+              controller_state_looking_forward(rs.logger.log, rs.initControllerState).controllerState,
               event.switch, event.event).1;
 
     var fwdOutstandingCommands1 :=
           controller_state_looking_forward(
-              rs.server_logger.log,
+              rs.logger.log,
               rs.initControllerState).commands;
 
-    assert rs'.server_logger.log == rs.server_logger.log + [log_entry];
+    assert rs'.logger.log == rs.logger.log + [log_entry];
     assert rs'.initControllerState == rs.initControllerState;
 
     var fwdOutstandingCommands2 :=
           controller_state_looking_forward(
-              rs'.server_logger.log,
+              rs'.logger.log,
               rs'.initControllerState).commands;
     assert fwdOutstandingCommands2 ==
           controller_state_looking_forward(
-              rs.server_logger.log + [log_entry],
+              rs.logger.log + [log_entry],
               rs.initControllerState).commands
      ==
           controller_state_looking_forward(
-              rs.server_logger.log,
+              rs.logger.log,
               rs.initControllerState).commands +
           controllerTransition(
-              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).controllerState,
+              controller_state_looking_forward(rs.logger.log, rs.initControllerState).controllerState,
               event.switch, event.event).1
       ==
           controller_state_looking_forward(
-              rs.server_logger.log,
+              rs.logger.log,
               rs.initControllerState).commands + singleCommands;
 
       lemma_command_ids_bounded(rs);
       lemma_filter_out_accepted_commands_plus_nonaccepted(rs,
-          controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands,
+          controller_state_looking_forward(rs.logger.log, rs.initControllerState).commands,
           singleCommands);
 
       assert refinement(rs').outstandingCommands
           == filter_out_accepted_commands(fwdOutstandingCommands2, rs.switches)
           == filter_out_accepted_commands(
-              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands + singleCommands, rs.switches)
+              controller_state_looking_forward(rs.logger.log, rs.initControllerState).commands + singleCommands, rs.switches)
           == filter_out_accepted_commands(
-              controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands, rs.switches) + seq_to_multiset(singleCommands)
+              controller_state_looking_forward(rs.logger.log, rs.initControllerState).commands, rs.switches) + seq_to_multiset(singleCommands)
           == refinement(rs).outstandingCommands + seq_to_multiset(singleCommands);
   }
 
@@ -333,7 +333,7 @@ module Refinement_Proof_LogEvent {
           forall command_id :: command_id in rs.switches[switch].received_command_ids ==>
           command_id <
             |controller_state_looking_forward(
-                rs.server_logger.log, rs.initControllerState).commands|
+                rs.logger.log, rs.initControllerState).commands|
   /*
   {
     reveal_accepted_commands_are_valid(); 
@@ -402,7 +402,7 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
   ensures packet_validation_preserved(rs, rs')
@@ -450,7 +450,7 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
 
@@ -472,8 +472,8 @@ module Refinement_Proof_LogEvent {
       lemma_refines_LoggerLogEvent_multiset_helper2(rs, rs', log_entry);
 
       set_diff_impl_multiset_adds_one(
-          refinement_outstandingEventsSet(rs'.switches, rs'.server_logger.log),
-          refinement_outstandingEventsSet(rs.switches, rs.server_logger.log),
+          refinement_outstandingEventsSet(rs'.switches, rs'.logger.log),
+          refinement_outstandingEventsSet(rs.switches, rs.logger.log),
           (log_entry.switch, log_entry.event_id),
           SwitchEvent(log_entry.switch, log_entry.event));
   }
@@ -491,7 +491,7 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
 
@@ -507,7 +507,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -516,7 +516,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs'.switches &&
           eid in rs'.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs'.server_logger.log ==>
+          (forall entry :: entry in rs'.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
@@ -527,7 +527,7 @@ module Refinement_Proof_LogEvent {
   {
     reveal_log_is_valid();
 
-    assert rs'.server_logger.log == rs.server_logger.log + [log_entry];
+    assert rs'.logger.log == rs.logger.log + [log_entry];
     assert rs.switches == rs'.switches;
 
     assert log_entry.switch in rs.switches;
@@ -535,18 +535,18 @@ module Refinement_Proof_LogEvent {
     assert rs.switches[log_entry.switch].bufferedEvents[log_entry.event_id]
         == log_entry.event;
 
-    assert log_is_valid(rs.switches, rs.server_logger.log);
-    assert forall entry :: entry in rs.server_logger.log ==>
+    assert log_is_valid(rs.switches, rs.logger.log);
+    assert forall entry :: entry in rs.logger.log ==>
                     is_valid_log_entry(rs.switches, entry);
 
-    forall entry | entry in rs.server_logger.log
+    forall entry | entry in rs.logger.log
       ensures !(entry.LMRecv? && entry.event_id == log_entry.event_id &&
                 entry.switch == log_entry.switch);
     {
       assert is_valid_log_entry(rs.switches, entry);
     }
 
-    assert (forall entry :: entry in rs.server_logger.log ==>
+    assert (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == log_entry.event_id &&
                   entry.switch == log_entry.switch));
 
@@ -555,7 +555,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -564,7 +564,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs'.switches &&
           eid in rs'.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs'.server_logger.log ==>
+          (forall entry :: entry in rs'.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
@@ -574,7 +574,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -583,7 +583,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs'.switches[switch].bufferedEvents &&
-          (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+          (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -593,12 +593,12 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           && !(
             switch in rs.switches &&
             eid in rs.switches[switch].bufferedEvents &&
-            (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+            (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
                 !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           )
         ) ::
@@ -609,10 +609,10 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           && !(
-            (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+            (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
                 !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           )
         ) ::
@@ -623,7 +623,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           && (log_entry.LMRecv? && log_entry.event_id == eid && log_entry.switch == switch)
         ) ::
@@ -641,12 +641,12 @@ module Refinement_Proof_LogEvent {
       assert (forall switch : EndPoint :: forall eid : int :: (
             switch in rs.switches &&
             eid in rs.switches[switch].bufferedEvents &&
-            (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+            (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
                 !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           ) ==> (
             switch in rs.switches &&
             eid in rs.switches[switch].bufferedEvents &&
-            (forall entry :: entry in rs.server_logger.log ==>
+            (forall entry :: entry in rs.logger.log ==>
                 !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
           )
         );
@@ -655,7 +655,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -664,7 +664,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+          (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -674,7 +674,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+          (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -685,7 +685,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs'.switches &&
           eid in rs'.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs'.server_logger.log ==>
+          (forall entry :: entry in rs'.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
@@ -706,7 +706,7 @@ module Refinement_Proof_LogEvent {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor == rs'.endpoint_logger
   requires Node_LoggerLogEvent(
-              rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
 
@@ -722,7 +722,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -731,7 +731,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs'.switches &&
           eid in rs'.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs'.server_logger.log ==>
+          (forall entry :: entry in rs'.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
@@ -742,7 +742,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs.server_logger.log ==>
+          (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -751,7 +751,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+          (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -761,7 +761,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs.switches &&
           eid in rs.switches[switch].bufferedEvents &&
-          (forall entry :: entry in (rs.server_logger.log + [log_entry]) ==>
+          (forall entry :: entry in (rs.logger.log + [log_entry]) ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs.switches[switch].bufferedEvents[eid]))
@@ -772,7 +772,7 @@ module Refinement_Proof_LogEvent {
         switch : EndPoint, eid : int | (
           switch in rs'.switches &&
           eid in rs'.switches[switch].bufferedEvents &&
-          (forall entry :: entry in rs'.server_logger.log ==>
+          (forall entry :: entry in rs'.logger.log ==>
               !(entry.LMRecv? && entry.event_id == eid && entry.switch == switch))
         ) ::
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))

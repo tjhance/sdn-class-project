@@ -99,7 +99,7 @@ module Types_i {
       environment: RavanaEnvironment,
 
       endpoint_logger: EndPoint,
-      server_logger: NodeLogger,
+      logger: NodeLogger,
       controllers: map<EndPoint, NodeController>,
       switches: map<EndPoint, NodeSwitch>,
 

@@ -26,7 +26,7 @@ module Refinement_Proof_ControllerProcessEntry {
                 rs'.controllers[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
     && rs.switches == rs'.switches
-    && rs.server_logger == rs'.server_logger
+    && rs.logger == rs'.logger
     && rs'.controllers == rs.controllers[
         rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   }
@@ -46,14 +46,14 @@ module Refinement_Proof_ControllerProcessEntry {
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
 
-    assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
-        == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
+    assert refinement_controllerState(rs.logger.log, rs.initControllerState)
+        == refinement_controllerState(rs'.logger.log, rs'.initControllerState);
 
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
+    assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches);
 
-    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
   lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState)

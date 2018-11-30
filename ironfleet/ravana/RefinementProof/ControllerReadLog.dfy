@@ -26,7 +26,7 @@ module Refinement_Proof_ControllerReadLog {
                 rs'.controllers[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
     && rs.switches == rs'.switches
-    && rs.server_logger == rs'.server_logger
+    && rs.logger == rs'.logger
     && rs'.controllers == rs.controllers[
         rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   }
@@ -44,19 +44,19 @@ module Refinement_Proof_ControllerReadLog {
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
 
-    assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
-        == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
+    assert refinement_controllerState(rs.logger.log, rs.initControllerState)
+        == refinement_controllerState(rs'.logger.log, rs'.initControllerState);
 
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
+    assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches);
 
-    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
   lemma lemma_controllers_log_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures controllers_log_valid(rs'.server_logger.log, rs'.controllers)
+  ensures controllers_log_valid(rs'.logger.log, rs'.controllers)
   {
     reveal_controllers_log_valid();
     forall ep | ep in rs'.controllers
@@ -68,26 +68,26 @@ module Refinement_Proof_ControllerReadLog {
   lemma lemma_controller_log_valid(rs: RState, rs': RState, ep: EndPoint)
   requires conditions(rs, rs')
   requires ep in rs'.controllers
-  ensures controller_log_valid(rs'.server_logger.log, rs'.controllers[ep])
+  ensures controller_log_valid(rs'.logger.log, rs'.controllers[ep])
   {
     if (ep == rs.environment.nextStep.actor) {
       lemma_log_msg_is_valid(rs, rs');
       if (|rs.environment.nextStep.ios[0].r.msg.full_log| >
           |rs.controllers[rs.environment.nextStep.actor].log_copy|) {
-        assert is_prefix(rs.environment.nextStep.ios[0].r.msg.full_log, rs.server_logger.log);
+        assert is_prefix(rs.environment.nextStep.ios[0].r.msg.full_log, rs.logger.log);
         assert rs.environment.nextStep.ios[0].r.msg.full_log
             == rs'.controllers[rs.environment.nextStep.actor].log_copy
             == rs'.controllers[ep].log_copy;
-        assert rs.server_logger.log == rs'.server_logger.log;
-        assert is_prefix(rs'.controllers[ep].log_copy, rs'.server_logger.log);
-        assert controller_log_valid(rs'.server_logger.log, rs'.controllers[ep]);
+        assert rs.logger.log == rs'.logger.log;
+        assert is_prefix(rs'.controllers[ep].log_copy, rs'.logger.log);
+        assert controller_log_valid(rs'.logger.log, rs'.controllers[ep]);
       } else {
         assert rs'.controllers[ep].log_copy ==
                rs.controllers[ep].log_copy;
         reveal_controllers_log_valid();
-        assert is_prefix(rs.controllers[ep].log_copy, rs.server_logger.log);
-        assert is_prefix(rs'.controllers[ep].log_copy, rs'.server_logger.log);
-        assert controller_log_valid(rs'.server_logger.log, rs'.controllers[ep]);
+        assert is_prefix(rs.controllers[ep].log_copy, rs.logger.log);
+        assert is_prefix(rs'.controllers[ep].log_copy, rs'.logger.log);
+        assert controller_log_valid(rs'.logger.log, rs'.controllers[ep]);
       }
     } else {
       reveal_controllers_log_valid();

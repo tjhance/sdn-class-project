@@ -7,13 +7,13 @@ module Refinement_i {
 
   predicate rstate_valid(rs: RState) {
     packets_are_valid(rs)
-    && log_is_valid(rs.switches, rs.server_logger.log)
+    && log_is_valid(rs.switches, rs.logger.log)
     && accepted_commands_are_valid(rs.initControllerState,
-        rs.switches, rs.server_logger.log)
+        rs.switches, rs.logger.log)
     && switches_valid(rs.switches)
 
     && controllers_recved_events_valid(rs.switches, rs.controllers)
-    && controllers_log_valid(rs.server_logger.log, rs.controllers)
+    && controllers_log_valid(rs.logger.log, rs.controllers)
     && controllers_state_correct(rs.initControllerState, rs.controllers,
         rs.switches)
   }
@@ -23,10 +23,10 @@ module Refinement_i {
   {
     ServiceState(
       refinement_switchStates(rs.switches),
-      refinement_controllerState(rs.server_logger.log, rs.initControllerState),
-      refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState,
+      refinement_controllerState(rs.logger.log, rs.initControllerState),
+      refinement_outstandingCommands(rs.logger.log, rs.initControllerState,
           rs.switches),
-      refinement_outstandingEvents(rs.switches, rs.server_logger.log)
+      refinement_outstandingEvents(rs.switches, rs.logger.log)
     )
   }
 
@@ -170,7 +170,7 @@ module Refinement_i {
   requires msg.CommandMessage?
   {
     var all_commands := controller_state_looking_forward(
-                rs.server_logger.log, rs.initControllerState).commands;
+                rs.logger.log, rs.initControllerState).commands;
     0 <= msg.command_id < |all_commands| &&
     all_commands[msg.command_id] == SingleCommand(dst, msg.command)
   }
@@ -221,7 +221,7 @@ module Refinement_i {
   predicate is_valid_LogBroadcastMessage(rs: RState, src: EndPoint, dst: EndPoint, msg: RavanaMessage)
   requires msg.LogBroadcastMessage?
   {
-    is_prefix(msg.full_log, rs.server_logger.log)
+    is_prefix(msg.full_log, rs.logger.log)
   }
 
   predicate {:opaque} switches_valid(switches: map<EndPoint, NodeSwitch>)

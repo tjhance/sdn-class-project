@@ -154,18 +154,18 @@ module RefinementLemmas_i {
   requires rs.switches[rs.environment.nextStep.actor].received_command_ids ==
            rs'.switches[rs.environment.nextStep.actor].received_command_ids
   requires rs.controllers == rs'.controllers
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
-  ensures refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState,
+  ensures refinement_outstandingCommands(rs.logger.log, rs.initControllerState,
           rs.switches) ==
-          refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState,
+          refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState,
           rs'.switches)
   /*
   {
     var fwdOutstandingCommands := 
-        controller_state_looking_forward(rs.server_logger.log, rs.initControllerState).commands;
+        controller_state_looking_forward(rs.logger.log, rs.initControllerState).commands;
     lemma_filter_out_accepted_commands_eq(rs, rs', fwdOutstandingCommands);
   }
 
@@ -181,7 +181,7 @@ module RefinementLemmas_i {
   requires rs.switches[rs.environment.nextStep.actor].received_command_ids ==
            rs'.switches[rs.environment.nextStep.actor].received_command_ids
   requires rs.controllers == rs'.controllers
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
@@ -208,12 +208,12 @@ module RefinementLemmas_i {
   requires rs.switches[rs.environment.nextStep.actor].received_command_ids ==
            rs'.switches[rs.environment.nextStep.actor].received_command_ids
   requires rs.controllers == rs'.controllers
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.switches, rs'.server_logger.log)
+        rs'.switches, rs'.logger.log)
   /*
   {
     reveal_accepted_commands_are_valid();
@@ -232,12 +232,12 @@ module RefinementLemmas_i {
   requires rs.switches[rs.environment.nextStep.actor].bufferedEvents ==
            rs'.switches[rs.environment.nextStep.actor].bufferedEvents
   requires rs.controllers == rs'.controllers
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
-  ensures refinement_outstandingEvents(rs.switches, rs.server_logger.log)
-       == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log)
+  ensures refinement_outstandingEvents(rs.switches, rs.logger.log)
+       == refinement_outstandingEvents(rs'.switches, rs'.logger.log)
   /*
   {
     lemma_outstanding_events_set_eq(rs, rs');
@@ -256,12 +256,12 @@ module RefinementLemmas_i {
   requires rs.switches[rs.environment.nextStep.actor].bufferedEvents ==
            rs'.switches[rs.environment.nextStep.actor].bufferedEvents
   requires rs.controllers == rs'.controllers
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
 
-  ensures refinement_outstandingEventsSet(rs.switches, rs.server_logger.log)
-       == refinement_outstandingEventsSet(rs'.switches, rs'.server_logger.log)
+  ensures refinement_outstandingEventsSet(rs.switches, rs.logger.log)
+       == refinement_outstandingEventsSet(rs'.switches, rs'.logger.log)
   /*
   {
   }
@@ -280,7 +280,7 @@ module RefinementLemmas_i {
   requires rs.controllers[rs.environment.nextStep.actor].recved_events ==
            rs'.controllers[rs.environment.nextStep.actor].recved_events
   requires rs.switches == rs'.switches
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.controllers == rs.controllers[
         rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   ensures controllers_recved_events_valid(
@@ -307,11 +307,11 @@ module RefinementLemmas_i {
   requires rs.controllers[rs.environment.nextStep.actor].log_copy ==
            rs'.controllers[rs.environment.nextStep.actor].log_copy
   requires rs.switches == rs'.switches
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.controllers == rs.controllers[
         rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   ensures controllers_log_valid(
-      rs'.server_logger.log,
+      rs'.logger.log,
       rs'.controllers)
   /*
   {
@@ -333,7 +333,7 @@ module RefinementLemmas_i {
   requires rs.controllers[rs.environment.nextStep.actor].log_copy ==
            rs'.controllers[rs.environment.nextStep.actor].log_copy
   requires rs.switches == rs'.switches
-  requires rs.server_logger == rs'.server_logger
+  requires rs.logger == rs'.logger
   requires rs'.controllers == rs.controllers[
         rs.environment.nextStep.actor := rs'.controllers[rs.environment.nextStep.actor]]
   ensures controllers_state_correct(

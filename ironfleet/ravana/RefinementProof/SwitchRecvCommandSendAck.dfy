@@ -27,7 +27,7 @@ module Refinement_Proof_SwitchRecvCommandSendAck {
                 command_id,
                 rs.environment.nextStep.ios)
     && rs.controllers == rs'.controllers
-    && rs.server_logger == rs'.server_logger
+    && rs.logger == rs'.logger
     && rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
@@ -48,16 +48,16 @@ module Refinement_Proof_SwitchRecvCommandSendAck {
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
 
-    assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
-        == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
+    assert refinement_controllerState(rs.logger.log, rs.initControllerState)
+        == refinement_controllerState(rs'.logger.log, rs'.initControllerState);
 
     lemma_outstanding_commands_eq(rs, rs');
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
+    assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches);
 
     lemma_outstanding_events_eq(rs, rs');
-    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
   lemma lemma_packets_are_valid(rs: RState, rs': RState, command_id: int)
@@ -113,7 +113,7 @@ module Refinement_Proof_SwitchRecvCommandSendAck {
 
   lemma lemma_log_is_valid(rs: RState, rs': RState, command_id: int)
   requires conditions(rs, rs', command_id)
-  ensures log_is_valid(rs'.switches, rs'.server_logger.log)
+  ensures log_is_valid(rs'.switches, rs'.logger.log)
   {
     reveal_log_is_valid();
   }
@@ -121,7 +121,7 @@ module Refinement_Proof_SwitchRecvCommandSendAck {
   lemma lemma_accepted_commands_are_valid(rs: RState, rs': RState, command_id: int)
   requires conditions(rs, rs', command_id)
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.switches, rs'.server_logger.log)
+        rs'.switches, rs'.logger.log)
   {
     reveal_accepted_commands_are_valid();
   }

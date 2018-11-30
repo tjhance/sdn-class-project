@@ -26,7 +26,7 @@ module Refinement_Proof_SwitchRecvCommand {
                 rs'.switches[rs.environment.nextStep.actor],
                 rs.environment.nextStep.ios)
     && rs.controllers == rs'.controllers
-    && rs.server_logger == rs'.server_logger
+    && rs.logger == rs'.logger
     && rs'.switches == rs.switches[
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
@@ -107,7 +107,7 @@ module Refinement_Proof_SwitchRecvCommand {
 
   lemma {:axiom} lemma_log_is_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
-  ensures log_is_valid(rs'.switches, rs'.server_logger.log)
+  ensures log_is_valid(rs'.switches, rs'.logger.log)
   /*
   {
     reveal_log_is_valid();
@@ -117,13 +117,13 @@ module Refinement_Proof_SwitchRecvCommand {
   lemma {:axiom} lemma_accepted_commands_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures accepted_commands_are_valid(rs'.initControllerState,
-        rs'.switches, rs'.server_logger.log)
+        rs'.switches, rs'.logger.log)
   /*
   {
     reveal_accepted_commands_are_valid();
 
     var all_commands := controller_state_looking_forward(
-                rs'.server_logger.log, rs'.initControllerState).commands;
+                rs'.logger.log, rs'.initControllerState).commands;
 
     var s := rs.switches[rs.environment.nextStep.actor];
 
@@ -201,8 +201,8 @@ module Refinement_Proof_SwitchRecvCommand {
   requires rstate_valid(rs')
   requires sc == SingleCommand(rs.environment.nextStep.actor,
                                rs.environment.nextStep.ios[0].r.msg.command)
-  ensures refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
-       == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches) + multiset{sc}
+  ensures refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+       == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches) + multiset{sc}
        /* 
   {
     lemma_incoming_command_matches_log(rs, rs', sc,
@@ -210,14 +210,14 @@ module Refinement_Proof_SwitchRecvCommand {
     lemma_filter_out_accepted_commands_inc(rs, rs', sc,
               rs.environment.nextStep.ios[0].r.msg.command_id,
               controller_state_looking_forward(
-                rs'.server_logger.log, rs'.initControllerState).commands);
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
+                rs'.logger.log, rs'.initControllerState).commands);
+    assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
         == filter_out_accepted_commands(controller_state_looking_forward(
-              rs.server_logger.log, rs.initControllerState).commands, rs.switches)
+              rs.logger.log, rs.initControllerState).commands, rs.switches)
         == filter_out_accepted_commands(controller_state_looking_forward(
-              rs'.server_logger.log, rs'.initControllerState).commands, rs'.switches)
+              rs'.logger.log, rs'.initControllerState).commands, rs'.switches)
             + multiset{sc}
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches)
+        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches)
             + multiset{sc};
   }
   */
@@ -274,9 +274,9 @@ module Refinement_Proof_SwitchRecvCommand {
   requires sc == SingleCommand(rs.environment.nextStep.actor,
                                rs.environment.nextStep.ios[0].r.msg.command)
   ensures 0 <= command_id < |controller_state_looking_forward(
-                rs.server_logger.log, rs.initControllerState).commands|
+                rs.logger.log, rs.initControllerState).commands|
   ensures controller_state_looking_forward(
-                rs.server_logger.log, rs.initControllerState).commands[command_id] == sc
+                rs.logger.log, rs.initControllerState).commands[command_id] == sc
   {
     lemma_valid_command_msg(rs, rs');
   }

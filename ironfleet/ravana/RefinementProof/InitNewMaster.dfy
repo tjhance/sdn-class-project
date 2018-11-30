@@ -21,7 +21,7 @@ module Refinement_Proof_InitNewMaster {
     && rs.initControllerState == rs'.initControllerState
     && rs.environment.nextStep.actor == rs'.endpoint_logger
     && Node_LoggerInitNewMaster(
-                rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+                rs.logger, rs'.logger, rs.environment.nextStep.ios)
     && rs.controllers == rs'.controllers
     && rs.switches == rs'.switches
   }
@@ -37,16 +37,16 @@ module Refinement_Proof_InitNewMaster {
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
 
-    assert rs.server_logger.log == rs'.server_logger.log;
+    assert rs.logger.log == rs'.logger.log;
 
-    assert refinement_controllerState(rs.server_logger.log, rs.initControllerState)
-        == refinement_controllerState(rs'.server_logger.log, rs'.initControllerState);
+    assert refinement_controllerState(rs.logger.log, rs.initControllerState)
+        == refinement_controllerState(rs'.logger.log, rs'.initControllerState);
 
-    assert refinement_outstandingCommands(rs.server_logger.log, rs.initControllerState, rs.switches)
-        == refinement_outstandingCommands(rs'.server_logger.log, rs'.initControllerState, rs'.switches);
+    assert refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
+        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches);
 
-    assert refinement_outstandingEvents(rs.switches, rs.server_logger.log)
-        == refinement_outstandingEvents(rs'.switches, rs'.server_logger.log);
+    assert refinement_outstandingEvents(rs.switches, rs.logger.log)
+        == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
   lemma lemma_packets_are_valid(rs: RState, rs': RState)

@@ -12,7 +12,7 @@ module DistributedSystem_i {
        LEnvironment_Init(rs.environment)
 
     && config.node_logger == rs.endpoint_logger
-    && NodeInit_Logger(rs.server_logger, config)
+    && NodeInit_Logger(rs.logger, config)
 
     && SeqIsUnique([config.node_logger] + config.node_controllers + config.node_switches)
 
@@ -48,20 +48,20 @@ module DistributedSystem_i {
         else if rs.environment.nextStep.actor in rs.controllers then
             RS_NextOneServer_Controller(rs, rs',
                 rs.environment.nextStep.actor, rs.environment.nextStep.ios) &&
-            rs.server_logger == rs'.server_logger &&
+            rs.logger == rs'.logger &&
             rs.switches == rs'.switches
         else if rs.environment.nextStep.actor in rs.switches then
             RS_NextOneServer_Switch(rs, rs',
                 rs.environment.nextStep.actor, rs.environment.nextStep.ios) &&
-            rs.server_logger == rs'.server_logger &&
+            rs.logger == rs'.logger &&
             rs.controllers == rs'.controllers
         else
-            rs.server_logger == rs'.server_logger &&
+            rs.logger == rs'.logger &&
             rs.controllers == rs'.controllers &&
             rs.switches == rs'.switches
         )
       else
-        rs.server_logger == rs'.server_logger &&
+        rs.logger == rs'.logger &&
         rs.controllers == rs'.controllers &&
         rs.switches == rs'.switches
     )
@@ -71,7 +71,7 @@ module DistributedSystem_i {
   requires id == rs.endpoint_logger
   {
         id == rs'.endpoint_logger
-     && NodeNext_Logger(rs.server_logger, rs'.server_logger, ios)
+     && NodeNext_Logger(rs.logger, rs'.logger, ios)
   }
 
   predicate RS_NextOneServer_Controller(rs: RState, rs': RState, id: EndPoint, ios: seq<RavanaIo>)

@@ -21,7 +21,7 @@ module Refinement_Proof_LoggerBroadcast {
     && rs.initControllerState == rs'.initControllerState
     && rs.environment.nextStep.actor == rs'.endpoint_logger
     && Node_LoggerBroadcast(
-                rs.server_logger, rs'.server_logger, rs.environment.nextStep.ios)
+                rs.logger, rs'.logger, rs.environment.nextStep.ios)
     && rs.controllers == rs'.controllers
     && rs.switches == rs'.switches
   }
