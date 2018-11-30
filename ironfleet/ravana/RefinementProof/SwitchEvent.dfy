@@ -32,7 +32,7 @@ module Refinement_Proof_SwitchEvent {
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
 
-  lemma lemma_refines_Logger_SwitchEvent(rs: RState, rs': RState, event: Event)
+  lemma lemma_refines_SwitchEvent(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
 
   ensures rstate_valid(rs')

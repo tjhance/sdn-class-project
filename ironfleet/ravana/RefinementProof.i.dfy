@@ -2,6 +2,7 @@ include "Types.i.dfy"
 include "Refinement.i.dfy"
 include "Service.i.dfy"
 include "DistributedSystem.i.dfy"
+include "RefinementLemmas.i.dfy"
 
 include "RefinementProof/ControllerLogEvent.dfy"
 include "RefinementProof/ControllerMarkEventComplete.dfy"
@@ -113,24 +114,47 @@ module Refinement_Proof_i {
 
       } else if (rs.environment.nextStep.actor in rs.switches) {
         var s := rs.switches[rs.environment.nextStep.actor];
-        var s' := rs'.controllers[rs.environment.nextStep.actor];
+        var s' := rs'.switches[rs.environment.nextStep.actor];
         var ios := rs.environment.nextStep.ios;
 
-        if (Node_SwitchEvent(s, s', ios)) {
-          Refinement_Proof_SwitchEvent.lemma_refines_SwitchEvent(rs, rs');
-        } else if (Node_SwitchEventSend(s, s', ios)) {
-          Refinement_Proof_SwitchEventSend.lemma_refines_SwitchEventSend(rs, rs');
+        if (exists a :: Node_SwitchEvent(s, s', a, ios)) {
+          var a :| Node_SwitchEvent(s, s', a, ios);
+          Refinement_Proof_SwitchEvent.lemma_refines_SwitchEvent(rs, rs', a);
+        } else if (exists a :: Node_SwitchEventSend(s, s', a, ios)) {
+          var a :| Node_SwitchEventSend(s, s', a, ios);
+          Refinement_Proof_SwitchEventSend.lemma_refines_SwitchEventSend(rs, rs', a);
         } else if (Node_SwitchNewMaster(s, s', ios)) {
           Refinement_Proof_SwitchNewMaster.lemma_refines_SwitchNewMaster(rs, rs');
         } else if (Node_SwitchRecvCommand(s, s', ios)) {
           Refinement_Proof_SwitchRecvCommand.lemma_refines_SwitchRecvCommand(rs, rs');
-        } else if (Node_SwitchRecvCommandSendAck(s, s', ios)) {
-          Refinement_Proof_SwitchRecvCommandSendAck.lemma_refines_SwitchRecvCommandSendAck(rs, rs');
+        } else if (exists a :: Node_SwitchRecvCommandSendAck(s, s', a, ios)) {
+          var a :| Node_SwitchRecvCommandSendAck(s, s', a, ios);
+          Refinement_Proof_SwitchRecvCommandSendAck.lemma_refines_SwitchRecvCommandSendAck(rs, rs', a);
         }
 
       } else {
+        assert false;
       }
-    } else {
+    } else if (rs.environment.nextStep.LEnvStepDeliverPacket?) {
+      lemma_all_eq(rs, rs');
+    } else if (rs.environment.nextStep.LEnvStepAdvanceTime?) {
+      lemma_all_eq(rs, rs');
+    } else if (rs.environment.nextStep.LEnvStepStutter?) {
+      lemma_all_eq(rs, rs');
     }
+  }
+
+  lemma lemma_all_eq(rs: RState, rs': RState)
+  requires rstate_valid(rs)
+  requires rs.environment.sentPackets == rs'.environment.sentPackets
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.logger == rs'.logger
+  requires rs.controllers == rs'.controllers
+  requires rs.switches == rs'.switches
+  ensures rstate_valid(rs')
+  ensures refinement(rs) == refinement(rs')
+  {
+    reveal_packets_are_valid();
   }
 }

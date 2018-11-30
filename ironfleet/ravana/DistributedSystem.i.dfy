@@ -56,14 +56,13 @@ module DistributedSystem_i {
             rs.logger == rs'.logger &&
             rs.controllers == rs'.controllers
         else
-            rs.logger == rs'.logger &&
-            rs.controllers == rs'.controllers &&
-            rs.switches == rs'.switches
+            false
         )
-      else
+      else (
         rs.logger == rs'.logger &&
         rs.controllers == rs'.controllers &&
         rs.switches == rs'.switches
+      )
     )
   }
 

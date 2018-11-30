@@ -32,7 +32,7 @@ module Refinement_Proof_SwitchRecvCommandSendAck {
         rs.environment.nextStep.actor := rs'.switches[rs.environment.nextStep.actor]]
   }
 
-  lemma lemma_refines_SwitchEventSend(rs: RState, rs': RState, command_id: int)
+  lemma lemma_refines_SwitchRecvCommandSendAck(rs: RState, rs': RState, command_id: int)
   requires conditions(rs, rs', command_id)
 
   ensures rstate_valid(rs')
