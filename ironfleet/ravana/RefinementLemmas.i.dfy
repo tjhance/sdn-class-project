@@ -320,6 +320,7 @@ module RefinementLemmas_i {
   */
 
   lemma
+  {:axiom}
   lemma_controllers_state_correct_if_controller_stuff_unchanged(
       rs: RState, rs': RState)
   requires rstate_valid(rs)
@@ -330,8 +331,21 @@ module RefinementLemmas_i {
   requires rs.initControllerState == rs'.initControllerState
   requires rs.environment.nextStep.actor in rs.controllers
   requires rs.environment.nextStep.actor in rs'.controllers
-  requires rs.controllers[rs.environment.nextStep.actor].log_copy ==
-           rs'.controllers[rs.environment.nextStep.actor].log_copy
+
+  requires is_prefix(
+              rs.controllers[rs.environment.nextStep.actor].log_copy,
+              rs'.controllers[rs.environment.nextStep.actor].log_copy
+            )
+  requires rs.controllers[rs.environment.nextStep.actor].buffered_commands ==
+           rs'.controllers[rs.environment.nextStep.actor].buffered_commands
+
+  requires rs.controllers[rs.environment.nextStep.actor].idx ==
+           rs'.controllers[rs.environment.nextStep.actor].idx
+  requires rs.controllers[rs.environment.nextStep.actor].current_command_id ==
+           rs'.controllers[rs.environment.nextStep.actor].current_command_id
+  requires rs.controllers[rs.environment.nextStep.actor].controllerState ==
+           rs'.controllers[rs.environment.nextStep.actor].controllerState
+
   requires rs.switches == rs'.switches
   requires rs.logger == rs'.logger
   requires rs'.controllers == rs.controllers[
@@ -342,8 +356,60 @@ module RefinementLemmas_i {
       rs'.switches)
   /*
   {
-    reveal_controllers_log_valid();
+    reveal_controllers_state_correct();
+
+    forall ep | ep in rs'.controllers
+    ensures controller_state_correct(rs'.initControllerState, rs'.controllers[ep], rs'.switches)
+    {
+      if (ep == rs.environment.nextStep.actor) {
+        assert controller_state_correct(
+            rs.initControllerState, rs.controllers[ep], rs.switches);
+
+        var s := rs.controllers[rs.environment.nextStep.actor];
+        var s' := rs'.controllers[rs.environment.nextStep.actor];
+        assert s'.idx == s.idx;
+        assert s.idx <= |s.log_copy|;
+        assert |s.log_copy| <= |s'.log_copy|;
+        assert 0 <= s'.idx <= |s'.log_copy|;
+
+        assert s.log_copy[0 .. s.idx] == s'.log_copy[0 .. s'.idx];
+
+        forall xid | xid in s'.buffered_commands
+        ensures
+          buffered_commands_correct(rs'.initControllerState,
+              xid, s'.log_copy, s'.buffered_commands[xid], rs'.switches)
+        {
+          assert buffered_commands_correct(rs.initControllerState,
+              xid, s.log_copy, s.buffered_commands[xid], rs.switches);
+          assert s'.log_copy[0 .. xid] == s.log_copy[0 .. xid];
+        }
+
+        assert controller_state_correct(rs'.initControllerState,
+            rs'.controllers[ep], rs'.switches);
+      } else {
+        assert controller_state_correct(rs'.initControllerState,
+            rs'.controllers[ep], rs'.switches);
+      }
+    }
   }
   */
 
+  lemma lemma_prefix_of_log_gives_prefix_of_commands(
+      log1: seq<LogEntry>,
+      log2: seq<LogEntry>,
+      init: ControllerState)
+  requires is_prefix(log1, log2)
+  ensures is_prefix(
+      controller_state_looking_forward(log1, init).commands,
+      controller_state_looking_forward(log2, init).commands
+    )
+  {
+    if (|log1| == |log2|) {
+      assert log1 == log2;
+    } else {
+      assert |log2| > |log1|;
+      assert is_prefix(log1, log2[0 .. |log2| - 1]);
+      lemma_prefix_of_log_gives_prefix_of_commands(log1, log2[0 .. |log2| - 1], init);
+    }
+  }
 }

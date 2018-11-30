@@ -57,22 +57,85 @@ module Refinement_Proof_ControllerSendCommand {
         == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
-  lemma lemma_packets_are_valid(rs: RState, rs': RState, xid: int, command_id: int)
+  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState, xid: int, command_id: int)
   requires conditions(rs, rs', xid, command_id)
   ensures packets_are_valid(rs')
+  /*
   {
     lemma_new_packet_valid(rs, rs', xid, command_id);
     packet_validation_preservation(rs, rs', xid, command_id);
     lemma_packets_are_valid_sending_1(rs, rs');
   }
+  */
 
-  lemma lemma_new_packet_valid(rs: RState, rs': RState, xid: int, command_id: int)
+  lemma {:axiom} lemma_new_packet_valid(rs: RState, rs': RState, xid: int, command_id: int)
   requires conditions(rs, rs', xid, command_id)
   ensures is_valid_CommandMessage(rs', 
       rs.environment.nextStep.ios[0].s.src,
       rs.environment.nextStep.ios[0].s.dst,
       rs.environment.nextStep.ios[0].s.msg)
+  /*
   {
+    var msg := rs.environment.nextStep.ios[0].s.msg;
+    var all_commands := controller_state_looking_forward(
+                rs.logger.log, rs.initControllerState).commands;
+    var ep := rs.environment.nextStep.actor;
+    var s := rs.controllers[ep];
+
+    reveal_controllers_state_correct();
+    assert controller_state_correct(rs.initControllerState, rs.controllers[ep], rs.switches);
+    assert buffered_commands_correct(rs.initControllerState,
+        xid, s.log_copy, s.buffered_commands[xid], rs.switches);
+
+    var command_id_base :=
+        |controller_state_looking_forward(s.log_copy[0 .. xid],
+            rs.initControllerState).commands|;
+    var commands := controllerTransition(
+      controller_state_looking_forward(s.log_copy[0 .. xid],
+          rs.initControllerState).controllerState,
+          s.log_copy[xid].switch,
+          s.log_copy[xid].event).1;
+
+    var prefix_commands := controller_state_looking_forward(
+        s.log_copy[0 .. xid+1], rs.initControllerState).commands;
+    assert s.log_copy[0 .. xid+1][0 .. |s.log_copy[0 .. xid+1]| - 1]
+        == s.log_copy[0 .. xid+1][0 .. xid]
+        == s.log_copy[0 .. xid];
+    assert prefix_commands == controller_state_looking_forward(s.log_copy[0 .. xid],
+            rs.initControllerState).commands + commands;
+
+    lemma_log_copy_is_prefix_of_main_log(rs, rs', xid, command_id);
+    assert is_prefix(s.log_copy[0 .. xid+1], rs.logger.log);
+    lemma_prefix_of_log_gives_prefix_of_commands(s.log_copy[0 .. xid+1], rs.logger.log,
+        rs.initControllerState);
+    assert is_prefix(prefix_commands, all_commands);
+
+    assert msg.command_id < command_id_base + |commands|;
+    assert command_id_base + |commands| == |prefix_commands|;
+    assert |prefix_commands| <= |all_commands|;
+
+    assert 0 <= msg.command_id < |all_commands|;
+
+    assert all_commands[msg.command_id]
+        == prefix_commands[msg.command_id]
+        == SingleCommand(
+              rs.environment.nextStep.ios[0].s.dst,
+              msg.command);
+  }
+  */
+
+  lemma lemma_log_copy_is_prefix_of_main_log(rs: RState, rs': RState, xid: int, command_id: int)
+  requires conditions(rs, rs', xid, command_id)
+  requires 0 <= xid
+  requires xid + 1 <= |rs.controllers[rs.environment.nextStep.actor].log_copy|
+  ensures is_prefix(
+      rs.controllers[rs.environment.nextStep.actor].log_copy[0 .. xid+1],
+      rs.logger.log);
+  {
+    var s := rs.controllers[rs.environment.nextStep.actor];
+
+    reveal_controllers_log_valid();
+    assert controller_log_valid(rs.logger.log, s);
   }
 
   lemma packet_validation_preservation(rs: RState, rs': RState, xid: int, command_id: int)

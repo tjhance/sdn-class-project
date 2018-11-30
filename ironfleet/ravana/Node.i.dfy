@@ -208,7 +208,8 @@ module Protocol_Node_i {
     ios[0].LIoOpSend? &&
     var send_packet := ios[0].s;
     send_packet.dst == comm.switch &&
-    send_packet.msg == CommandMessage(comm.command, command_id)
+    send_packet.msg == CommandMessage(comm.command, command_id) &&
+    s' == s
   }
 
   predicate Node_SwitchRecvCommand(

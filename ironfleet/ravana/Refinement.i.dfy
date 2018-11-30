@@ -260,7 +260,7 @@ module Refinement_i {
     is_prefix(controller.log_copy, full_log)
   }
 
-  predicate is_prefix(a: seq<LogEntry>, b: seq<LogEntry>)
+  predicate is_prefix<T>(a: seq<T>, b: seq<T>)
   {
     |a| <= |b| && a == b[0 .. |a|]
   }
