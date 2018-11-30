@@ -40,6 +40,7 @@ module Refinement_Proof_ControllerRecvEvent {
 
     lemma_recved_events_valid(rs, rs');
     lemma_controllers_log_valid_if_log_copy_unchanged(rs, rs');
+    lemma_controllers_state_correct_if_controller_stuff_unchanged(rs, rs');
 
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);

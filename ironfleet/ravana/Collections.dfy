@@ -37,10 +37,9 @@ module Collections {
     )
   }
 
-  lemma {:axiom} set_to_multiset_induction<A,B>(s : set<(A,B)>, x : (A,B))
+  lemma set_to_multiset_induction<A,B>(s : set<(A,B)>, x : (A,B))
   requires !(x in s)
   ensures set_to_multiset(s + {x}) == set_to_multiset(s) + multiset{x.1}
-  /*
   {
     assert |s + {x}| != 0;
 
@@ -89,7 +88,6 @@ module Collections {
           == set_to_multiset(s) + multiset{x.1};
     }
   }
-  */
 
   lemma set_diff_impl_multiset_adds_one<A,B>
         (s : set<(A,B)>, s' : set<(A,B)>, key : A, t : B)
@@ -97,58 +95,136 @@ module Collections {
   requires s' - s == {(key, t)}
   ensures multiset_adds_one(set_to_multiset(s), set_to_multiset(s'))
   ensures added_obj(set_to_multiset(s), set_to_multiset(s')) == t
+
+  decreases |s|
   {
     if (|s| == 0) {
       assert set_to_multiset(s) == multiset{};
       assert set_to_multiset(s') == multiset{t};
-      var y :| y in set_to_multiset(s') - set_to_multiset(s);
-      assert y == added_obj(set_to_multiset(s), set_to_multiset(s'));
+      //var y :| y in set_to_multiset(s') - set_to_multiset(s);
+
+      reveal_added_obj();
+      assert exists y :: y in (set_to_multiset(s') - set_to_multiset(s)) &&
+                y == added_obj(set_to_multiset(s), set_to_multiset(s'));
+
+      var y :| y in set_to_multiset(s') - set_to_multiset(s) &&
+                y == added_obj(set_to_multiset(s), set_to_multiset(s'));
+
       assert set_to_multiset(s') - set_to_multiset(s) == multiset{t};
       assert y == t;
     } else {
       var y :| y in s;
       assert y in s';
       set_diff_impl_multiset_adds_one(s - {y}, s' - {y}, key, t);
-      assert set_to_multiset(s) == set_to_multiset(s - {y}) + multiset{y.1};
-      assert set_to_multiset(s') == set_to_multiset(s' - {y}) + multiset{y.1};
 
-      assert |set_to_multiset(s') - set_to_multiset(s)| ==
-              |(set_to_multiset(s' - {y}) + multiset{t}) - 
-              (set_to_multiset(s - {y}) + multiset{t})|
-          == |set_to_multiset(s' - {y}) - set_to_multiset(s - {y})|
-          == 1;
-      
-      assert |set_to_multiset(s')| - |set_to_multiset(s)| ==
-              |set_to_multiset(s' - {y}) + multiset{t}| - 
-              |set_to_multiset(s - {y}) + multiset{t}|
-        ==
-              |set_to_multiset(s' - {y})| + |multiset{t}| - 
-              (|set_to_multiset(s - {y})| + |multiset{t}|)
-        ==
-              |set_to_multiset(s' - {y})| - |set_to_multiset(s - {y})|
-        == 1; 
-      
-      assert added_obj(set_to_multiset(s - {y}), set_to_multiset(s' - {y})) == t;
+      lemma1(y, s, s', key, t);
+      lemma2(y, s, s', key, t);
 
-      assert t in ((set_to_multiset(s' - {y})) - set_to_multiset(s - {y}));
+      lemma3(y, s, s', key, t);
 
-      assert set_to_multiset(s - {y}) == set_to_multiset(s) - multiset{y.1};
-      assert set_to_multiset(s' - {y}) == set_to_multiset(s') - multiset{y.1};
-
-      assert ((set_to_multiset(s' - {y})) - set_to_multiset(s - {y}))
-        == (set_to_multiset(s') - multiset{y.1}) - (set_to_multiset(s) - multiset{y.1})
-        == set_to_multiset(s') - set_to_multiset(s);
-
-      assert t in set_to_multiset(s') - set_to_multiset(s);
-
-      assert t in ((set_to_multiset(s')) - set_to_multiset(s));
-
-      assert forall t' :: t' in (set_to_multiset(s') - set_to_multiset(s)) ==> t' == t;
-
-      var z :| z in (set_to_multiset(s') - set_to_multiset(s));
+      assert multiset_adds_one(set_to_multiset(s), set_to_multiset(s'));
+      reveal_added_obj();
+      assert exists z :: z in (set_to_multiset(s') - set_to_multiset(s)) &&
+          z == added_obj(set_to_multiset(s), set_to_multiset(s'));
+      var z :| z in (set_to_multiset(s') - set_to_multiset(s)) &&
+          z == added_obj(set_to_multiset(s), set_to_multiset(s'));
       assert z == t;
-      assert z == added_obj(set_to_multiset(s), set_to_multiset(s'));
     }
   }
 
+  lemma lemma1<A,B>(y: (A,B), s: set<(A,B)>, s': set<(A,B)>, key: A, t: B)
+  requires y in s
+  requires s' >= s
+  requires s' - s == {(key, t)}
+
+  requires multiset_adds_one(set_to_multiset(s-{y}), set_to_multiset(s'-{y}))
+  requires added_obj(set_to_multiset(s-{y}), set_to_multiset(s'-{y})) == t
+
+  ensures set_to_multiset(s) == set_to_multiset(s - {y}) + multiset{y.1};
+  ensures set_to_multiset(s') == set_to_multiset(s' - {y}) + multiset{y.1};
+  {
+    assert y in s';
+    set_to_multiset_induction(s - {y}, y);
+    assert (s - {y}) + {y} == s;
+    assert set_to_multiset(s) == set_to_multiset(s - {y}) + multiset{y.1};
+    set_to_multiset_induction(s' - {y}, y);
+    assert (s' - {y}) + {y} == s';
+    assert set_to_multiset(s') == set_to_multiset(s' - {y}) + multiset{y.1};
+  }
+
+  lemma lemma2<A,B>(y: (A,B), s: set<(A,B)>, s': set<(A,B)>, key: A, t: B)
+  requires y in s
+  requires s' >= s
+  requires s' - s == {(key, t)}
+  requires set_to_multiset(s) == set_to_multiset(s - {y}) + multiset{y.1};
+  requires set_to_multiset(s') == set_to_multiset(s' - {y}) + multiset{y.1};
+
+  requires multiset_adds_one(set_to_multiset(s-{y}), set_to_multiset(s'-{y}))
+  requires added_obj(set_to_multiset(s-{y}), set_to_multiset(s'-{y})) == t
+
+  ensures |set_to_multiset(s') - set_to_multiset(s)| == 1
+  ensures |set_to_multiset(s')| - |set_to_multiset(s)| == 1
+  {
+    assert |set_to_multiset(s') - set_to_multiset(s)| ==
+            |(set_to_multiset(s' - {y}) + multiset{t}) - 
+            (set_to_multiset(s - {y}) + multiset{t})|
+        == |set_to_multiset(s' - {y}) - set_to_multiset(s - {y})|
+        == 1;
+    
+    assert |set_to_multiset(s')| - |set_to_multiset(s)| ==
+            |set_to_multiset(s' - {y}) + multiset{t}| - 
+            |set_to_multiset(s - {y}) + multiset{t}|
+      ==
+            |set_to_multiset(s' - {y})| + |multiset{t}| - 
+            (|set_to_multiset(s - {y})| + |multiset{t}|)
+      ==
+            |set_to_multiset(s' - {y})| - |set_to_multiset(s - {y})|
+      == 1; 
+  }
+
+  lemma lemma3<A,B>(y: (A,B), s: set<(A,B)>, s': set<(A,B)>, key: A, t: B)
+  requires y in s
+  requires s' >= s
+  requires s' - s == {(key, t)}
+  requires set_to_multiset(s) == set_to_multiset(s - {y}) + multiset{y.1};
+  requires set_to_multiset(s') == set_to_multiset(s' - {y}) + multiset{y.1};
+
+  requires multiset_adds_one(set_to_multiset(s-{y}), set_to_multiset(s'-{y}))
+  requires added_obj(set_to_multiset(s-{y}), set_to_multiset(s'-{y})) == t
+
+  requires |set_to_multiset(s') - set_to_multiset(s)| == 1
+  requires |set_to_multiset(s')| - |set_to_multiset(s)| == 1
+
+  ensures set_to_multiset(s') - set_to_multiset(s) == multiset{t};
+  {
+    assert added_obj(set_to_multiset(s - {y}), set_to_multiset(s' - {y})) == t;
+
+    reveal_added_obj();
+    assert t in ((set_to_multiset(s' - {y})) - set_to_multiset(s - {y}));
+
+    assert set_to_multiset(s - {y}) == set_to_multiset(s) - multiset{y.1};
+    assert set_to_multiset(s' - {y}) == set_to_multiset(s') - multiset{y.1};
+
+    assert ((set_to_multiset(s' - {y})) - set_to_multiset(s - {y}))
+      == (set_to_multiset(s') - multiset{y.1}) - (set_to_multiset(s) - multiset{y.1})
+      == set_to_multiset(s') - set_to_multiset(s);
+
+    assert t in set_to_multiset(s') - set_to_multiset(s);
+
+    assert t in ((set_to_multiset(s')) - set_to_multiset(s));
+
+    assert |set_to_multiset(s') - set_to_multiset(s)| == 1;
+    one_elem_multiset(set_to_multiset(s') - set_to_multiset(s), t);
+    assert set_to_multiset(s') - set_to_multiset(s) == multiset{t};
+  }
+
+  lemma one_elem_multiset<A>(s: multiset<A>, t: A)
+  requires |s| == 1
+  requires t in s
+  ensures s == multiset{t}
+  {
+    assert |s - multiset{t}| == 0;
+    assert s - multiset{t} == multiset{};
+    assert s == multiset{t} + multiset{};
+  }
 }

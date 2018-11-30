@@ -57,24 +57,21 @@ module Refinement_Proof_ControllerSendCommand {
         == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
-  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState, xid: int, command_id: int)
+  lemma lemma_packets_are_valid(rs: RState, rs': RState, xid: int, command_id: int)
   requires conditions(rs, rs', xid, command_id)
   ensures packets_are_valid(rs')
-  /*
   {
     lemma_new_packet_valid(rs, rs', xid, command_id);
     packet_validation_preservation(rs, rs', xid, command_id);
     lemma_packets_are_valid_sending_1(rs, rs');
   }
-  */
 
-  lemma {:axiom} lemma_new_packet_valid(rs: RState, rs': RState, xid: int, command_id: int)
+  lemma lemma_new_packet_valid(rs: RState, rs': RState, xid: int, command_id: int)
   requires conditions(rs, rs', xid, command_id)
   ensures is_valid_CommandMessage(rs', 
       rs.environment.nextStep.ios[0].s.src,
       rs.environment.nextStep.ios[0].s.dst,
       rs.environment.nextStep.ios[0].s.msg)
-  /*
   {
     var msg := rs.environment.nextStep.ios[0].s.msg;
     var all_commands := controller_state_looking_forward(
@@ -122,7 +119,6 @@ module Refinement_Proof_ControllerSendCommand {
               rs.environment.nextStep.ios[0].s.dst,
               msg.command);
   }
-  */
 
   lemma lemma_log_copy_is_prefix_of_main_log(rs: RState, rs': RState, xid: int, command_id: int)
   requires conditions(rs, rs', xid, command_id)

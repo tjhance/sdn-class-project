@@ -34,6 +34,7 @@ module Refinement_Proof_LoggerLogEvent {
 
     lemma_accepted_commands_are_valid(rs, rs');
     lemma_log_is_valid(rs, rs');
+    lemma_controllers_log_valid(rs, rs');
 
     var s := refinement(rs);
     var s' := refinement(rs');
@@ -85,6 +86,28 @@ module Refinement_Proof_LoggerLogEvent {
   }
 
   lemma
+  lemma_controllers_log_valid(rs: RState, rs': RState)
+  requires rstate_valid(rs)
+
+  requires LEnvironment_Next(rs.environment, rs'.environment)
+  requires rs.environment.nextStep.LEnvStepHostIos?
+  requires rs.endpoint_logger == rs'.endpoint_logger
+  requires rs.initControllerState == rs'.initControllerState
+  requires rs.environment.nextStep.actor == rs'.endpoint_logger
+  requires Node_LoggerLogEvent(
+              rs.logger, rs'.logger, rs.environment.nextStep.ios)
+  requires rs.controllers == rs'.controllers
+  requires rs.switches == rs'.switches
+  ensures controllers_log_valid(rs'.logger.log, rs'.controllers)
+  {
+    reveal_controllers_log_valid();
+    forall ep | ep in rs'.controllers
+    ensures controller_log_valid(rs'.logger.log, rs'.controllers[ep]);
+    {
+    }
+  }
+
+  lemma
   lemma_log_is_valid(rs: RState, rs': RState)
   requires rstate_valid(rs)
 
@@ -118,7 +141,7 @@ module Refinement_Proof_LoggerLogEvent {
         is_valid_log_entry(rs'.switches, entry);
   }
 
-  lemma {:axiom}
+  lemma
   lemma_accepted_commands_are_valid(rs: RState, rs': RState)
   requires rstate_valid(rs)
 
@@ -133,7 +156,6 @@ module Refinement_Proof_LoggerLogEvent {
   requires rs.switches == rs'.switches
   ensures accepted_commands_are_valid(rs'.initControllerState,
         rs'.switches, rs'.logger.log)
-  /*
   {
     reveal_accepted_commands_are_valid();
 
@@ -144,9 +166,8 @@ module Refinement_Proof_LoggerLogEvent {
 
     all_commands_grows(rs, rs', all_commands, all_commands');
   }
-  */
 
-  lemma {:axiom}
+  lemma
   all_commands_grows(rs: RState, rs': RState, commands: seq<SingleCommand>,
           commands': seq<SingleCommand>)
   requires rstate_valid(rs)
@@ -168,11 +189,10 @@ module Refinement_Proof_LoggerLogEvent {
 
   ensures |commands| <= |commands'|
   ensures commands == commands'[0 .. |commands| ]
-  /*
   {
     assert rs.environment.nextStep.ios[0].LIoOpReceive?;
     assert rs.environment.nextStep.ios[0].r.msg.LogMessage?;
-    lemma_received_packet_is_valid(rs, rs.environment.nextStep.ios[0].r);
+    lemma_received_packet_is_valid(rs, rs', rs.environment.nextStep.ios[0].r);
     var log_entry := rs.environment.nextStep.ios[0].r.msg.log_entry;
     assert rs.logger.log + [log_entry] == rs'.logger.log;
     
@@ -186,16 +206,14 @@ module Refinement_Proof_LoggerLogEvent {
       assert sac1.commands == commands;
     }  
   }
-  */
 
-  lemma {:axiom}
+  lemma
   lemma_lmproc_outstandingEventsSet_matches(rs: RState, rs': RState, log_entry: LogEntry)
   requires rs'.switches == rs.switches
   requires rs'.logger.log == rs.logger.log + [log_entry]
   requires log_entry.LMProc?
   ensures refinement_outstandingEventsSet(rs.switches, rs.logger.log)
        == refinement_outstandingEventsSet(rs'.switches, rs'.logger.log)
-  /*
   {
     forall switch | switch in rs.switches
     ensures forall eid :: eid in rs.switches[switch].bufferedEvents ==> (
@@ -247,9 +265,8 @@ module Refinement_Proof_LoggerLogEvent {
           )
         == refinement_outstandingEventsSet(rs'.switches, rs'.logger.log);
   }
-  */
 
-  lemma {:axiom}
+  lemma
   lemma_outstandingCommands(rs: RState, rs': RState, singleCommands: seq<SingleCommand>,
       log_entry: LogEntry, event: SwitchEvent)
   requires rstate_valid(rs)
@@ -327,20 +344,18 @@ module Refinement_Proof_LoggerLogEvent {
           == refinement(rs).outstandingCommands + seq_to_multiset(singleCommands);
   }
 
-  lemma {:axiom} lemma_command_ids_bounded(rs: RState)
+  lemma lemma_command_ids_bounded(rs: RState)
   requires rstate_valid(rs)
   ensures forall switch :: switch in rs.switches ==>
           forall command_id :: command_id in rs.switches[switch].received_command_ids ==>
           command_id <
             |controller_state_looking_forward(
                 rs.logger.log, rs.initControllerState).commands|
-  /*
   {
     reveal_accepted_commands_are_valid(); 
   }
-  */
 
-  lemma {:axiom} lemma_filter_out_accepted_commands_plus_nonaccepted(
+  lemma lemma_filter_out_accepted_commands_plus_nonaccepted(
       rs: RState,
       a: seq<SingleCommand>, b: seq<SingleCommand>)
   requires forall switch :: switch in rs.switches ==>
@@ -348,7 +363,6 @@ module Refinement_Proof_LoggerLogEvent {
            command_id < |a|
   ensures filter_out_accepted_commands(a + b, rs.switches) == 
           filter_out_accepted_commands(a, rs.switches) + seq_to_multiset(b)
-  /*
   {
     reveal_seq_to_multiset();
     if (|b| == 0) {
@@ -391,9 +405,8 @@ module Refinement_Proof_LoggerLogEvent {
           == filter_out_accepted_commands(a, rs.switches) + seq_to_multiset(b);
     }
   }
-  */
 
-  lemma {:axiom} packet_validation_preservation(rs: RState, rs': RState)
+  lemma packet_validation_preservation(rs: RState, rs': RState)
   requires rstate_valid(rs)
 
   requires LEnvironment_Next(rs.environment, rs'.environment)
@@ -406,7 +419,6 @@ module Refinement_Proof_LoggerLogEvent {
   requires rs.controllers == rs'.controllers
   requires rs.switches == rs'.switches
   ensures packet_validation_preserved(rs, rs')
-  /*
   {
     forall p : LPacket<EndPoint, RavanaMessage>
     ensures 
@@ -437,10 +449,8 @@ module Refinement_Proof_LoggerLogEvent {
     }
     reveal_packet_validation_preserved();
   }
-  */
 
   lemma
-  {:axiom}
   lemma_refines_LoggerLogEvent_multiset(rs: RState, rs': RState, log_entry: LogEntry)
   requires rstate_valid(rs)
   requires rstate_valid(rs')
@@ -466,7 +476,6 @@ module Refinement_Proof_LoggerLogEvent {
   ensures multiset_adds_one(refinement(rs').outstandingEvents, refinement(rs).outstandingEvents);
   ensures SwitchEvent(log_entry.switch, log_entry.event)
           == added_obj(refinement(rs').outstandingEvents, refinement(rs).outstandingEvents)
-  /*
   {
       lemma_refines_LoggerLogEvent_multiset_helper1(rs, rs', log_entry);
       lemma_refines_LoggerLogEvent_multiset_helper2(rs, rs', log_entry);
@@ -477,10 +486,8 @@ module Refinement_Proof_LoggerLogEvent {
           (log_entry.switch, log_entry.event_id),
           SwitchEvent(log_entry.switch, log_entry.event));
   }
-  */
 
   lemma
-  {:axiom}
       lemma_refines_LoggerLogEvent_multiset_helper1
       (rs: RState, rs': RState, log_entry: LogEntry)
   requires rstate_valid(rs)
@@ -523,7 +530,6 @@ module Refinement_Proof_LoggerLogEvent {
       ) ==
       { ((log_entry.switch, log_entry.event_id),
              SwitchEvent(log_entry.switch, log_entry.event)) }
-  /*
   {
     reveal_log_is_valid();
 
@@ -692,10 +698,8 @@ module Refinement_Proof_LoggerLogEvent {
       );
 
   }
-  */
 
   lemma
-  {:axiom}
       lemma_refines_LoggerLogEvent_multiset_helper2
       (rs: RState, rs': RState, log_entry: LogEntry)
   requires rstate_valid(rs)
@@ -736,7 +740,6 @@ module Refinement_Proof_LoggerLogEvent {
         ) ::
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
       )
-      /*
   {
       assert (set
         switch : EndPoint, eid : int | (
@@ -778,5 +781,4 @@ module Refinement_Proof_LoggerLogEvent {
           ((switch, eid), SwitchEvent(switch, rs'.switches[switch].bufferedEvents[eid]))
       );
   }
-  */
 }

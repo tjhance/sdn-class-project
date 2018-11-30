@@ -42,25 +42,44 @@ module Refinement_Proof_SwitchEvent {
     lemma_log_is_valid(rs, rs', event);
     lemma_accepted_commands_are_valid(rs, rs', event);
     lemma_switches_valid(rs, rs', event);
+    lemma_controller_stuff_valid(rs, rs', event);
 
     lemma_outstanding_commands_eq(rs, rs');
     lemma_multiset_adds_one(rs, rs', event);
   }
 
-  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState, event: Event)
+  lemma lemma_controller_stuff_valid(rs: RState, rs': RState, event: Event)
+  requires conditions(rs, rs', event)
+  ensures controllers_recved_events_valid(
+      rs'.switches,
+      rs'.controllers)
+  ensures controllers_state_correct(
+      rs'.initControllerState,
+      rs'.controllers,
+      rs'.switches)
+  {
+    forall be | be in rs.switches[rs.environment.nextStep.actor].bufferedEvents
+    ensures be in rs'.switches[rs.environment.nextStep.actor].bufferedEvents
+    ensures rs.switches[rs.environment.nextStep.actor].bufferedEvents[be]
+         == rs'.switches[rs.environment.nextStep.actor].bufferedEvents[be]
+    {
+      lemma_event_ids_not_equal(rs, rs.environment.nextStep.actor, be);
+    }
+    lemma_controller_recved_events_valid_for_switch_change(rs, rs');
+    lemma_controllers_state_correct_for_switch_change(rs, rs');
+  }
+
+  lemma lemma_packets_are_valid(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   ensures packets_are_valid(rs')
-  /*
   {
     packet_validation_preservation(rs, rs', event);
     lemma_packets_are_valid_no_sending(rs, rs');
   }
-  */
 
-  lemma {:axiom} packet_validation_preservation(rs: RState, rs': RState, event: Event)
+  lemma packet_validation_preservation(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   ensures packet_validation_preserved(rs, rs')
-  /*
   {
     forall p : LPacket<EndPoint, RavanaMessage>
     ensures 
@@ -70,7 +89,14 @@ module Refinement_Proof_SwitchEvent {
       if (is_valid_message(rs, p.src, p.dst, p.msg)) {
         match p.msg
           case EventMessage(event: Event, event_id: int) => {
-            assert is_valid_EventMessage(rs', p.src, p.dst, p.msg);
+            if (p.src == rs.environment.nextStep.actor) {
+              assert event_id in rs.switches[p.src].bufferedEvents;
+              lemma_event_ids_not_equal(rs, rs.environment.nextStep.actor, event_id);
+              assert rs'.switches[p.src].bufferedEvents[event_id] == event;
+              assert is_valid_EventMessage(rs', p.src, p.dst, p.msg);
+            } else {
+              assert is_valid_EventMessage(rs', p.src, p.dst, p.msg);
+            }
           }
           case EventAck(event_ack_id: int) => {
             assert is_valid_EventAck(rs', p.src, p.dst, p.msg);
@@ -101,12 +127,10 @@ module Refinement_Proof_SwitchEvent {
     }
     reveal_packet_validation_preserved();
   }
-  */
 
-  lemma {:axiom} lemma_log_is_valid(rs: RState, rs': RState, event: Event)
+  lemma lemma_log_is_valid(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   ensures log_is_valid(rs'.switches, rs'.logger.log)
-  /*
   {
     reveal_log_is_valid();
     forall entry | entry in rs.logger.log
@@ -115,13 +139,11 @@ module Refinement_Proof_SwitchEvent {
       lemma_log_entry_valid(rs, rs', event, entry);
     }
   }
-  */
 
-  lemma {:axiom} lemma_log_entry_valid(rs: RState, rs': RState, event: Event, entry: LogEntry)
+  lemma lemma_log_entry_valid(rs: RState, rs': RState, event: Event, entry: LogEntry)
   requires conditions(rs, rs', event)
   requires is_valid_log_entry(rs.switches, entry)
   ensures is_valid_log_entry(rs'.switches, entry)
-  /*
   {
     if (entry.LMRecv?) {
       assert entry.switch in rs.switches;
@@ -133,16 +155,14 @@ module Refinement_Proof_SwitchEvent {
       lemma_bufferedEvents_equal(rs, rs', event, entry.switch, entry.event_id);
     }
   }
-  */
 
-  lemma {:axiom} lemma_bufferedEvents_equal(rs: RState, rs': RState,
+  lemma lemma_bufferedEvents_equal(rs: RState, rs': RState,
       event: Event, switch: EndPoint, event_id: int)
   requires conditions(rs, rs', event)
   requires switch in rs.switches
   requires event_id in rs.switches[switch].bufferedEvents
   ensures rs.switches[switch].bufferedEvents[event_id]
        == rs'.switches[switch].bufferedEvents[event_id];
-  /*
   {
     if (switch == rs.environment.nextStep.actor) {
       lemma_event_ids_not_equal(rs, switch, event_id);
@@ -158,35 +178,29 @@ module Refinement_Proof_SwitchEvent {
           == rs'.switches[switch].bufferedEvents[event_id];
     }
   }
-  */
 
-  lemma {:axiom} lemma_event_ids_not_equal(rs: RState, switch: EndPoint, id: int)
+  lemma lemma_event_ids_not_equal(rs: RState, switch: EndPoint, id: int)
   requires rstate_valid(rs)
   requires switch in rs.switches
   requires id in rs.switches[switch].bufferedEvents
   ensures id != rs.switches[switch].event_id
-  /*
   {
     reveal_switches_valid();
   }
-  */
 
-  lemma {:axiom} lemma_accepted_commands_are_valid(rs: RState, rs': RState, event: Event)
+  lemma lemma_accepted_commands_are_valid(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   ensures accepted_commands_are_valid(rs'.initControllerState,
         rs'.switches, rs'.logger.log)
-  /*
   {
     lemma_accepted_commands_are_valid_if_received_command_ids_unchanged(rs, rs');
   }
-  */
 
-  lemma {:axiom} lemma_multiset_adds_one(rs: RState, rs': RState, event: Event)
+  lemma lemma_multiset_adds_one(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   requires rstate_valid(rs')
   ensures multiset_adds_one(refinement(rs).outstandingEvents,
                             refinement(rs').outstandingEvents)
-  /*
   {
     lemma_outstandingEventsSet(rs, rs', event);
     lemma_outstandingEventsSet_not_contained(rs, rs', event);
@@ -197,9 +211,8 @@ module Refinement_Proof_SwitchEvent {
                rs.switches[rs.environment.nextStep.actor].event_id),
         SwitchEvent(rs.environment.nextStep.actor, event));
   }
-  */
 
-  lemma {:axiom} lemma_outstandingEventsSet(rs: RState, rs': RState, event: Event)
+  lemma lemma_outstandingEventsSet(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   requires rstate_valid(rs')
   ensures refinement_outstandingEventsSet(rs'.switches, rs'.logger.log)
@@ -207,7 +220,6 @@ module Refinement_Proof_SwitchEvent {
           + {((rs.environment.nextStep.actor,
                rs.switches[rs.environment.nextStep.actor].event_id),
                 SwitchEvent(rs.environment.nextStep.actor, event))}
-  /*
   {
     lemma_new_event_id_not_in_log(rs, rs', event);
     assert
@@ -358,14 +370,12 @@ module Refinement_Proof_SwitchEvent {
                rs.switches[rs.environment.nextStep.actor].event_id),
                 SwitchEvent(rs.environment.nextStep.actor, event))};
   }
-  */
 
-  lemma {:axiom} lemma_new_event_id_not_in_log(rs: RState, rs': RState, event: Event)
+  lemma lemma_new_event_id_not_in_log(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   requires rstate_valid(rs')
   ensures (forall entry :: entry in rs.logger.log ==>
               !(entry.LMRecv? && entry.event_id == rs.switches[rs.environment.nextStep.actor].event_id && entry.switch == rs.environment.nextStep.actor))
-  /*
   {
     forall entry | entry in rs.logger.log
     ensures !(entry.LMRecv? && entry.event_id == rs.switches[rs.environment.nextStep.actor].event_id && entry.switch == rs.environment.nextStep.actor)
@@ -389,9 +399,8 @@ module Refinement_Proof_SwitchEvent {
       }
     }
   }
-  */
 
-  lemma {:axiom} lemma_every_switch_eid_matches(rs: RState, rs': RState, event: Event)
+  lemma lemma_every_switch_eid_matches(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   requires rstate_valid(rs')
   ensures (
@@ -401,7 +410,6 @@ module Refinement_Proof_SwitchEvent {
             (rs.switches[switch].bufferedEvents[eid] ==
             rs'.switches[switch].bufferedEvents[eid])
         )
-  /*
   {
     forall switch | switch in rs.switches
     ensures (forall eid :: 
@@ -417,9 +425,8 @@ module Refinement_Proof_SwitchEvent {
       }
     }
   }
-  */
 
-  lemma {:axiom} lemma_outstandingEventsSet_not_contained(rs: RState, rs': RState, event: Event)
+  lemma lemma_outstandingEventsSet_not_contained(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)
   requires rstate_valid(rs')
   ensures !(
@@ -429,7 +436,6 @@ module Refinement_Proof_SwitchEvent {
         )
        in refinement_outstandingEventsSet(rs.switches, rs.logger.log)
     )
-  /*
   {
     if (((rs.environment.nextStep.actor,
                rs.switches[rs.environment.nextStep.actor].event_id),
@@ -443,7 +449,6 @@ module Refinement_Proof_SwitchEvent {
        assert false;
     }
   }
-  */
 
   lemma lemma_switches_valid(rs: RState, rs': RState, event: Event)
   requires conditions(rs, rs', event)

@@ -42,6 +42,9 @@ module Refinement_Proof_SwitchNewMaster {
     lemma_accepted_commands_are_valid(rs, rs');
     lemma_switches_valid(rs, rs');
 
+    lemma_controller_recved_events_valid_for_switch_change(rs, rs');
+    lemma_controllers_state_correct_for_switch_change(rs, rs');
+
     assert refinement_switchStates(rs.switches)
         == refinement_switchStates(rs'.switches);
 

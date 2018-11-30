@@ -43,6 +43,9 @@ module Refinement_Proof_SwitchEventSend {
     lemma_accepted_commands_are_valid(rs, rs', event_id);
     lemma_switches_valid(rs, rs', event_id);
 
+    lemma_controller_recved_events_valid_for_switch_change(rs, rs');
+    lemma_controllers_state_correct_for_switch_change(rs, rs');
+
     lemma_refinement_switchStates_eq(rs, rs', event_id);
 
     assert refinement_switchStates(rs.switches)
@@ -60,20 +63,17 @@ module Refinement_Proof_SwitchEventSend {
         == refinement_outstandingEvents(rs'.switches, rs'.logger.log);
   }
 
-  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState, event_id: int)
+  lemma lemma_packets_are_valid(rs: RState, rs': RState, event_id: int)
   requires conditions(rs, rs', event_id)
   ensures packets_are_valid(rs')
-  /*
   {
     packet_validation_preservation(rs, rs', event_id);
     lemma_packets_are_valid_sending_1(rs, rs');
   }
-  */
 
   lemma packet_validation_preservation(rs: RState, rs': RState, event_id: int)
   requires conditions(rs, rs', event_id)
   ensures packet_validation_preserved(rs, rs')
-  /*
   {
     forall p : LPacket<EndPoint, RavanaMessage>
     ensures 
@@ -113,16 +113,13 @@ module Refinement_Proof_SwitchEventSend {
     }
     reveal_packet_validation_preserved();
   }
-  */
 
-  lemma {:axiom} lemma_log_is_valid(rs: RState, rs': RState, event_id: int)
+  lemma lemma_log_is_valid(rs: RState, rs': RState, event_id: int)
   requires conditions(rs, rs', event_id)
   ensures log_is_valid(rs'.switches, rs'.logger.log)
-  /*
   {
     reveal_log_is_valid();
   }
-  */
 
   lemma lemma_accepted_commands_are_valid(rs: RState, rs': RState, event_id: int)
   requires conditions(rs, rs', event_id)

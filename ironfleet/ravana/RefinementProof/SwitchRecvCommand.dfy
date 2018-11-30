@@ -42,6 +42,9 @@ module Refinement_Proof_SwitchRecvCommand {
     lemma_accepted_commands_are_valid(rs, rs');
     lemma_switches_valid(rs, rs');
 
+    lemma_controller_recved_events_valid_for_switch_change(rs, rs');
+    lemma_controllers_state_correct_for_switch_change(rs, rs');
+
     lemma_outstanding_events_eq(rs, rs');
 
     var sc := SingleCommand(rs.environment.nextStep.actor,
@@ -50,20 +53,17 @@ module Refinement_Proof_SwitchRecvCommand {
     lemma_multiset(rs, rs', sc);
   }
 
-  lemma {:axiom} lemma_packets_are_valid(rs: RState, rs': RState)
+  lemma lemma_packets_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures packets_are_valid(rs')
-  /*
   {
     packet_validation_preservation(rs, rs');
     lemma_packets_are_valid_no_sending(rs, rs');
   }
-  */
 
-  lemma {:axiom} packet_validation_preservation(rs: RState, rs': RState)
+  lemma packet_validation_preservation(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures packet_validation_preserved(rs, rs')
-  /*
   {
     forall p : LPacket<EndPoint, RavanaMessage>
     ensures 
@@ -103,22 +103,18 @@ module Refinement_Proof_SwitchRecvCommand {
     }
     reveal_packet_validation_preserved();
   }
-  */
 
-  lemma {:axiom} lemma_log_is_valid(rs: RState, rs': RState)
+  lemma lemma_log_is_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures log_is_valid(rs'.switches, rs'.logger.log)
-  /*
   {
     reveal_log_is_valid();
   }
-  */
 
-  lemma {:axiom} lemma_accepted_commands_are_valid(rs: RState, rs': RState)
+  lemma lemma_accepted_commands_are_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures accepted_commands_are_valid(rs'.initControllerState,
         rs'.switches, rs'.logger.log)
-  /*
   {
     reveal_accepted_commands_are_valid();
 
@@ -155,30 +151,25 @@ module Refinement_Proof_SwitchRecvCommand {
       }
     }
   }
-  */
 
-  lemma {:axiom} lemma_valid_command_msg(rs: RState, rs': RState)
+  lemma lemma_valid_command_msg(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures is_valid_CommandMessage(rs,
       rs.environment.nextStep.ios[0].r.src,
       rs.environment.nextStep.ios[0].r.dst,
       rs.environment.nextStep.ios[0].r.msg)
-  /*
   {
     reveal_packets_are_valid();
   }
-  */
 
-  lemma {:axiom} lemma_switches_valid(rs: RState, rs': RState)
+  lemma lemma_switches_valid(rs: RState, rs': RState)
   requires conditions(rs, rs')
   ensures switches_valid(rs'.switches)
-  /*
   {
     reveal_switches_valid();
   }
-  */
 
-  lemma {:axiom} lemma_multiset(rs: RState, rs': RState, sc: SingleCommand)
+  lemma lemma_multiset(rs: RState, rs': RState, sc: SingleCommand)
   requires conditions(rs, rs')
   requires rstate_valid(rs')
   requires sc == SingleCommand(rs.environment.nextStep.actor,
@@ -189,21 +180,18 @@ module Refinement_Proof_SwitchRecvCommand {
   ensures sc == added_obj(
       refinement(rs').outstandingCommands,
       refinement(rs).outstandingCommands)
-  /*
   {
     lemma_multiset_inc(rs, rs', sc);
     reveal_added_obj();
   }
-  */
 
-  lemma {:axiom} lemma_multiset_inc(rs: RState, rs': RState, sc: SingleCommand)
+  lemma lemma_multiset_inc(rs: RState, rs': RState, sc: SingleCommand)
   requires conditions(rs, rs')
   requires rstate_valid(rs')
   requires sc == SingleCommand(rs.environment.nextStep.actor,
                                rs.environment.nextStep.ios[0].r.msg.command)
   ensures refinement_outstandingCommands(rs.logger.log, rs.initControllerState, rs.switches)
        == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches) + multiset{sc}
-       /* 
   {
     lemma_incoming_command_matches_log(rs, rs', sc,
               rs.environment.nextStep.ios[0].r.msg.command_id);
@@ -220,9 +208,8 @@ module Refinement_Proof_SwitchRecvCommand {
         == refinement_outstandingCommands(rs'.logger.log, rs'.initControllerState, rs'.switches)
             + multiset{sc};
   }
-  */
 
-  lemma {:axiom} lemma_filter_out_accepted_commands_inc(
+  lemma lemma_filter_out_accepted_commands_inc(
       rs: RState, rs': RState, sc: SingleCommand, idx: int, comms: seq<SingleCommand>)
   requires conditions(rs, rs')
   requires rstate_valid(rs')
@@ -235,7 +222,6 @@ module Refinement_Proof_SwitchRecvCommand {
   ensures  filter_out_accepted_commands(comms, rs.switches)
         == filter_out_accepted_commands(comms, rs'.switches)
             + multiset{sc}
-  /*
   {
     assert |comms| != 0;
     if (idx == |comms| - 1) {
@@ -244,9 +230,8 @@ module Refinement_Proof_SwitchRecvCommand {
       lemma_filter_out_accepted_commands_inc(rs, rs', sc, idx, comms[0 .. |comms| - 1]);
     }
   }
-  */
 
-  lemma {:axiom} lemma_filter_out_accepted_commands_inc2(
+  lemma lemma_filter_out_accepted_commands_inc2(
       rs: RState, rs': RState, sc: SingleCommand, idx: int, comms: seq<SingleCommand>)
   requires conditions(rs, rs')
   requires rstate_valid(rs')
@@ -257,14 +242,12 @@ module Refinement_Proof_SwitchRecvCommand {
              rs.switches[sc.switch].received_command_ids + [idx]
   ensures  filter_out_accepted_commands(comms, rs.switches)
         == filter_out_accepted_commands(comms, rs'.switches)
-  /*
   {
     if (|comms| == 0) {
     } else {
       lemma_filter_out_accepted_commands_inc2(rs, rs', sc, idx, comms[0 .. |comms| - 1]);
     }
   }
-  */
 
   lemma lemma_incoming_command_matches_log(rs: RState, rs': RState, sc: SingleCommand,
       command_id: int)

@@ -43,6 +43,9 @@ module Refinement_Proof_SwitchRecvCommandSendAck {
     lemma_accepted_commands_are_valid(rs, rs', command_id);
     lemma_switches_valid(rs, rs', command_id);
 
+    lemma_controller_recved_events_valid_for_switch_change(rs, rs');
+    lemma_controllers_state_correct_for_switch_change(rs, rs');
+
     lemma_refinement_switchStates_eq(rs, rs', command_id);
 
     assert refinement_switchStates(rs.switches)
